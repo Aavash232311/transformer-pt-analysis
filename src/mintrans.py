@@ -1,15 +1,6 @@
-# Dataset for Fibonacci mod-N sequences
 import torch
 from torch.utils.data import Dataset, DataLoader
 import random
-
-
-device = torch.device("cpu")
-if torch.cuda.is_available():
-    print(f"GPU Found: {torch.cuda.get_device_name(0)}")
-    device = torch.device("cuda")
-else:
-    print("No GPU available, using CPU")
 
 class FibonacciModDataset(Dataset):
     def __init__(self, num_samples=10000, seq_len=10, mod=10):
@@ -53,58 +44,42 @@ class MinimalTransformer(nn.Module):
             x = x + attn_out
         return self.out_proj(x)
 
-# Training loop 
-def train_model(model, dataloader, epochs=10, lr=1e-3, device=device):
+# Training loop
+
+def train_model(model, dataloader, epochs=10, lr=1e-3):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     model.train()
-    
     for epoch in range(epochs):
         total_loss = 0
         for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            
             logits = model(x)
             loss = loss_fn(logits.view(-1, logits.size(-1)), y.view(-1))
-            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
             total_loss += loss.item()
-        
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss / len(dataloader):.4f}")
+        print(f"Epoch {epoch+1}, Loss: {total_loss / len(dataloader):.4f}")
 
-# Evaluation loop 
-def evaluate_model(model, dataloader, device=device):
+# Evaluation loop
+
+def evaluate_model(model, dataloader):
     correct, total = 0, 0
     model.eval()
-    
     with torch.no_grad():
         for x, y in dataloader:
-            # Move data to GPU
-            x, y = x.to(device), y.to(device)
-            
             logits = model(x)
             pred = logits.argmax(dim=-1)
             correct += (pred == y).sum().item()
             total += y.numel()
-    
     print(f"Accuracy: {correct / total:.2%}")
 
 # Usage example
 if __name__ == "__main__":
     vocab_size = 10
-    
-    # Create datasets
-    train_ds = FibonacciModDataset(num_samples=5000, seq_len=10, mod=vocab_size)
+    train_ds = FibonacciModDataset(num_samples=5000, mod=vocab_size)
     train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
-    
-    model = MinimalTransformer(vocab_size=vocab_size).to(device)
-    
-    print(f"\nTraining on: {device}")
-    print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
-    
-    train_model(model, train_loader, epochs=10, lr=1e-3, device=device)
-    
-    evaluate_model(model, train_loader, device=device)
+
+    model = MinimalTransformer(vocab_size=vocab_size)
+    train_model(model, train_loader)
+    evaluate_model(model, train_loader)
