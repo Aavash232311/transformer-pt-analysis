@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 import random
 
 class FibonacciModDataset(Dataset):
@@ -74,12 +74,20 @@ def evaluate_model(model, dataloader):
             total += y.numel()
     print(f"Accuracy: {correct / total:.2%}")
 
-# Usage example
+
 if __name__ == "__main__":
     vocab_size = 10
-    train_ds = FibonacciModDataset(num_samples=5000, mod=vocab_size)
+    generated_ds = FibonacciModDataset(num_samples=5000, mod=vocab_size)
+
+    # split this into train and eval
+    train_size = int(0.8 * len(generated_ds)) # 80% to train
+    test_size = len(generated_ds) - train_size # rest of the size
+
+    train_ds, test_ds = random_split(generated_ds, [train_size, test_size]) 
+
     train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=32)
 
     model = MinimalTransformer(vocab_size=vocab_size)
     train_model(model, train_loader)
-    evaluate_model(model, train_loader)
+    evaluate_model(model, test_loader)
