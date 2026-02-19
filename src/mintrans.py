@@ -25,7 +25,7 @@ class FibonacciModDataset(Dataset):
         return self.samples[idx]
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=32, n_heads=8, num_layers=6, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=32, n_heads=2, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -84,7 +84,7 @@ def evaluate_model(model, dataloader):
 
 if __name__ == "__main__":
     vocab_size = 10
-    batch_size = 256
+    batch_size = 32
     generated_ds = FibonacciModDataset(num_samples=5000, mod=vocab_size)
 
     train_size = int(0.8 * len(generated_ds))
@@ -97,5 +97,5 @@ if __name__ == "__main__":
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
     
-    train_model(model, train_loader, epochs=20)
+    train_model(model, train_loader, epochs=10)
     evaluate_model(model, test_loader)
