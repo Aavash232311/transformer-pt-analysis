@@ -6,6 +6,8 @@ import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 class FibonacciModDataset(Dataset):
     def __init__(self, num_samples=10000, seq_len=10, mod=10):
         self.samples = []
