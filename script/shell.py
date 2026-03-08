@@ -118,36 +118,37 @@ def evaluate_model(model, dataloader, show_accuracy = False):
     avg_loss = total_loss / len(dataloader) 
     return avg_loss
 
-vocab_size = 10
-batch_size = 128
-generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
+if __name__ == "__main__":
+    vocab_size = 10
+    batch_size = 128
+    generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
 
 
 
-train_size = int(0.8 * len(generated_ds))
-test_size = len(generated_ds) - train_size
-train_ds, test_ds = random_split(generated_ds, [train_size, test_size]) 
+    train_size = int(0.8 * len(generated_ds))
+    test_size = len(generated_ds) - train_size
+    train_ds, test_ds = random_split(generated_ds, [train_size, test_size]) 
 
-train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-test_loader = DataLoader(test_ds, batch_size=batch_size, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-
-
-model = MinimalTransformer(vocab_size=vocab_size).to(device)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
 
 
-''' 
-We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
- '''
+    model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
-checkpoint_dir = 'checkpoints'
-file_name = 'v1.pth'
-full_path  = os.path.join(checkpoint_dir, file_name)
 
-train_model(model, train_loader, epochs=200,test_loader=test_loader) 
-evaluate_model(model, test_loader, show_accuracy=True)
+    ''' 
+    We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
+    '''
 
-if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
-    os.makedirs(checkpoint_dir)
+    checkpoint_dir = 'checkpoints'
+    file_name = 'v1.pth'
+    full_path  = os.path.join(checkpoint_dir, file_name)
 
-torch.save(model.state_dict(), full_path) # save it right there
-print(f"Successfully saved to: {full_path}")
+    train_model(model, train_loader, epochs=200,test_loader=test_loader) 
+    evaluate_model(model, test_loader, show_accuracy=True)
+
+    if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
+        os.makedirs(checkpoint_dir)
+
+    torch.save(model.state_dict(), full_path) # save it right there
+    print(f"Successfully saved to: {full_path}")
