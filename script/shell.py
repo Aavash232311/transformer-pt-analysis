@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+''' The hyperparamaters in which we got perfect accuracy '''
 class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10, num_samples=10000):
         self.mod = mod
@@ -140,15 +140,18 @@ if __name__ == "__main__":
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
 
-    checkpoint_dir = 'checkpoints'
-    file_name = 'v1.pth'
-    full_path  = os.path.join(checkpoint_dir, file_name)
+    check_len = 3
 
-    train_model(model, train_loader, epochs=200,test_loader=test_loader) 
-    evaluate_model(model, test_loader, show_accuracy=True)
+    for i in range(2, 4):
+        checkpoint_dir = 'checkpoints'
+        file_name = f'v{i}.pth'
+        full_path  = os.path.join(checkpoint_dir, file_name)
 
-    if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
-        os.makedirs(checkpoint_dir)
+        train_model(model, train_loader, epochs=200,test_loader=test_loader) 
+        evaluate_model(model, test_loader, show_accuracy=True)
 
-    torch.save(model.state_dict(), full_path) # save it right there
-    print(f"Successfully saved to: {full_path}")
+        if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
+            os.makedirs(checkpoint_dir)
+
+        torch.save(model.state_dict(), full_path) # save it right there
+        print(f"Successfully saved to: {full_path}")
