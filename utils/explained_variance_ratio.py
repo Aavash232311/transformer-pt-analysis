@@ -9,6 +9,7 @@ from sklearn.decomposition import PCA
 from script.shell import MinimalTransformer
 
 ''' For extreme reuseability make those hyperparams also paramaterised '''
+
 def explained_variance(full_path):
 
 
@@ -33,6 +34,9 @@ def explained_variance(full_path):
 
     pca = PCA(n_components=8) 
 
+    pca.fit(X)
+
+
     explained_variance_ratio = pca.explained_variance_ratio_
 
     cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
@@ -51,4 +55,21 @@ def explained_variance(full_path):
     plt.ylabel('Cumulative Explained Variance Ratio')
     plt.title('Cumulative Explained Variance Ratio by Principal Components')
 
+    plt.show()
+
+
+def overfitting_plot(train_history, eval_losses):
+    epochs = [x['epoch'] for x in train_history]
+    train_losses = [x['loss'] for x in train_history]
+    
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(epochs, train_losses, label='Training Loss', color='red', linewidth=2)
+    plt.plot(epochs, eval_losses, label='Evaluation Loss', color='orange', linewidth=2)
+
+    plt.title('Overfitting Check: Training vs Evaluation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
     plt.show()
