@@ -3,14 +3,12 @@ import os
 import sys
 import torch
 import numpy as np
-from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from script.shell import MinimalTransformer
 
 ''' For extreme reuseability make those hyperparams also paramaterised '''
 
-def explained_variance(full_path):
+def explained_variance(full_path, model):
 
 
     if not os.path.exists(full_path):
@@ -18,11 +16,7 @@ def explained_variance(full_path):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vocab_size = 10
-
     ''' Important note we can't import the original transfoemr cause there, we have different hyperparamaster initlized. '''
-
-    model = MinimalTransformer(vocab_size=vocab_size)
     model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
 
     embedding_learned = model.token_embed # token embedding is vocab_size X d_model
