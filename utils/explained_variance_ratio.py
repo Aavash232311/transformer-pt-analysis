@@ -17,7 +17,13 @@ def explained_variance(full_path, model, pc):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ''' Important note we can't import the original transfoemr cause there, we have different hyperparamaster initlized. '''
-    model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
+
+    try:
+        model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
+    except Exception:
+        # In later models we have tracked training and eval history for plot
+        model.load_state_dict(torch.load(full_path, map_location=device)['model_state_dict'])
+
     embedding_learned = model.token_embed # token embedding is vocab_size X d_model
     B, T = embedding_learned.weight.shape
 
