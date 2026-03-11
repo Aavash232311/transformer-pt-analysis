@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 
 ''' For extreme reuseability make those hyperparams also paramaterised '''
 
-def explained_variance(full_path, model):
+def explained_variance(full_path, model, pc):
 
 
     if not os.path.exists(full_path):
@@ -18,7 +18,6 @@ def explained_variance(full_path, model):
 
     ''' Important note we can't import the original transfoemr cause there, we have different hyperparamaster initlized. '''
     model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
-
     embedding_learned = model.token_embed # token embedding is vocab_size X d_model
     B, T = embedding_learned.weight.shape
 
@@ -26,7 +25,7 @@ def explained_variance(full_path, model):
 
     X = embedding_matrix.cpu().numpy() 
 
-    pca = PCA(n_components=8) 
+    pca = PCA(n_components=pc) 
 
     pca.fit(X)
 
