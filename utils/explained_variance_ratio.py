@@ -33,10 +33,9 @@ def explained_variance(full_path, model, pc):
     explained_variance_ratio = pca.explained_variance_ratio_
 
     cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
-
     plt.figure(figsize=(8, 8))
-    plt.plot(cumulative_variance_ratio, marker='o')
-
+    plt_x = range(1, len(cumulative_variance_ratio) + 1)
+    plt.plot(plt_x, cumulative_variance_ratio, marker='o')
     for i, val in enumerate(cumulative_variance_ratio):
         plt.annotate(f'PC{i+1} {val:.3%} ', 
                     (i, val), 
