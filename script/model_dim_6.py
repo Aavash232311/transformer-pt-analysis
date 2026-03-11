@@ -156,8 +156,8 @@ if __name__ == "__main__":
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
-    checkpoint_dir = '../checkpoints'
-    file_name = 'v_exp.pth'
+    checkpoint_dir = 'checkpoints'
+    file_name = 'dim_6_mlp.pth'
     full_path = os.path.join(checkpoint_dir, file_name)
 
     try:
