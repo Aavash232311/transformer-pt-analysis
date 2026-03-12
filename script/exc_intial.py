@@ -140,11 +140,6 @@ if __name__ == "__main__":
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
-
-    ''' 
-    We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
-    '''
-
     checkpoint_dir = 'checkpoints'
     file_name = 'v1_initial.pth'
     full_path  = os.path.join(checkpoint_dir, file_name)
