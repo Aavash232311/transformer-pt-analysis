@@ -41,7 +41,7 @@ class FibonacciModDataset(Dataset):
 
 
 class MLP(nn.Module):
-    def __init__(self, d_model, expansion=6):
+    def __init__(self, d_model, expansion=8):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(d_model, d_model * expansion),
@@ -54,7 +54,7 @@ class MLP(nn.Module):
 
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=3, n_heads=1, num_layers=4, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=3, n_heads=1, num_layers=6, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -87,7 +87,7 @@ train_plot = []
 eval_plot = []
 
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -144,7 +144,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 if __name__ == "__main__":
     vocab_size = 10
-    batch_size = 12
+    batch_size = 8
     generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
 
     train_size = int(0.8 * len(generated_ds))
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     file_name = 'exp.pth'
     full_path = os.path.join(checkpoint_dir, file_name)
 
-    epoch = 28
+    epoch = 25
     save = True
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
