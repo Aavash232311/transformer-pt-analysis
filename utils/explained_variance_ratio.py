@@ -8,21 +8,19 @@ from sklearn.decomposition import PCA
 
 ''' For extreme reuseability make those hyperparams also paramaterised '''
 
+
 def explained_variance(full_path, model, pc):
-
-
-    if not os.path.exists(full_path):
-        sys.exit()    # re-run the train and see, this script is for analysis
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ''' Important note we can't import the original transfoemr cause there, we have different hyperparamaster initlized. '''
 
-    try:
-        model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
-    except Exception:
-        # In later models we have tracked training and eval history for plot
-        model.load_state_dict(torch.load(full_path, map_location=device)['model_state_dict'])
+    if full_path is not None:
+        try:
+            model.load_state_dict(torch.load(full_path, map_location=device)) # loaded into transformer
+        except Exception:
+            # In later models we have tracked training and eval history for plot
+            model.load_state_dict(torch.load(full_path, map_location=device)['model_state_dict'])
 
     embedding_learned = model.token_embed # token embedding is vocab_size X d_model
     B, T = embedding_learned.weight.shape
@@ -74,3 +72,54 @@ def overfitting_plot(train_history, eval_losses):
 
 
 
+def pca_analysis(model, pc):
+    embedding_learned = model.token_embed
+    B, T = embedding_learned.weight.shape
+    embedding_matrix = embedding_learned.weight.detach()
+    X = embedding_matrix.cpu().numpy()
+
+    pca = PCA(n_components=pc)
+    X_pca = pca.fit_transform(X)
+
+    for i in range(len(X_pca)):
+        plt.annotate(str(i + 1), (X_pca[i, 0], X_pca[i, 1]), fontsize=8)
+
+
+    plt.scatter(X_pca[:,0], X_pca[:,1], s=5)
+    plt.title("PCA of Embedding vectors model learned")
+    plt.show()
+
+def plot_3d(full_path, model, pc):
+
+
+    if not os.path.exists(full_path):
+        sys.exit()  
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    try:
+        model.load_state_dict(torch.load(full_path, map_location=device)) 
+    except Exception:
+        model.load_state_dict(torch.load(full_path, map_location=device)['model_state_dict'])
+    pca = PCA(n_components=pc) 
+    embedding_learned = model.token_embed
+    embedding_matrix = embedding_learned.weight.detach()
+    X = embedding_matrix.cpu().numpy() 
+    pca.fit(X)
+    X_transformed = pca.transform(X) 
+    
+    x = X_transformed[:, 0]
+    y = X_transformed[:, 1]
+    z = X_transformed[:, 2]
+
+    fig = plt.figure(figsize=(6, 18))
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(x, y, z, alpha=0.5, s=10)
+
+    ax.set_xlabel('PC1')
+    ax.set_ylabel('PC2')
+    ax.set_zlabel('PC3')
+    ax.set_title('Token Embeddings in PCA Space')
+
+    plt.tight_layout()
+    plt.show()
