@@ -57,10 +57,10 @@ class MinimalTransformer(nn.Module):
     def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=3, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
-        self.dropout = nn.Dropout(p=0.01) # regulation paramaters
+        
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
-            nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+            nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.01)
             for _ in range(num_layers)
         ])
         self.mlps = nn.ModuleList([
@@ -73,12 +73,12 @@ class MinimalTransformer(nn.Module):
         B, T = tokens.shape
         pos = torch.arange(T, device=tokens.device)
         x = self.token_embed(tokens) + self.pos_embed(pos).unsqueeze(0)
-        x = self.dropout(x) # random activations zeroed out
+
         attn_mask = torch.triu(torch.ones(T, T, device=tokens.device) * float('-inf'), diagonal=1)
         for attn, mlp in zip(self.layers, self.mlps):
             attn_out, _ = attn(x, x, x, attn_mask=attn_mask)
-            x = x + self.dropout(attn_out)
-            x = x + self.dropout(mlp(x))
+            x = x + attn_out
+            x = x + mlp(x)
         return self.out_proj(x)
 
     def get_embeddings(self):
