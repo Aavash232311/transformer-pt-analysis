@@ -57,7 +57,7 @@ def explained_variance(full_path, model, pc):
 def overfitting_plot(train_history, eval_losses):
     epochs = [x['epoch'] for x in train_history]
     train_losses = [x['loss'] for x in train_history]
-    
+
     plt.figure(figsize=(10, 6))
 
     plt.plot(epochs, train_losses, label='Training Loss', color='red', linewidth=2)
@@ -122,4 +122,28 @@ def plot_3d(full_path, model, pc):
     ax.set_title('Token Embeddings in PCA Space')
 
     plt.tight_layout()
+    plt.show()
+
+
+def accuracy_plot(accuracy):
+
+    labels = ['Accuracy', 'Error']
+    sizes = [accuracy, 100 - accuracy]
+
+    colors = ["#207023", "#FC8C84"]  
+    explode = (0.1, 0) 
+
+
+    plt.pie(sizes, 
+            explode=explode, 
+            labels=labels, 
+            colors=colors,
+            autopct='%1.1f%%', 
+            shadow=True, 
+            startangle=140)
+
+    plt.legend(labels, title="Performance Metrics", loc="lower right")
+
+    plt.axis('equal') 
+    plt.title('Model Performance')
     plt.show()

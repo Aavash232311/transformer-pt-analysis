@@ -57,7 +57,7 @@ class MinimalTransformer(nn.Module):
     def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=3, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
-        
+        self.d_model = d_model
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
             nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.01)
@@ -111,7 +111,8 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
 
         model.eval()
         with torch.no_grad():
-            val_loss = evaluate_model(model, test_loader)
+            ''' Wish we had something like 'out' like in c#, or I am not sure here '''
+            val_loss, total_acc = evaluate_model(model, test_loader) 
             eval_plot.append(val_loss)
 
         avg_loss = total_loss / len(dataloader)
@@ -137,11 +138,13 @@ def evaluate_model(model, dataloader, show_accuracy=False):
             correct += (pred[:, 1:] == y[:, 1:]).sum().item()
             total += y[:, 1:].numel()
 
+    total_accuracy = f"{correct / total:.2%}"
     if show_accuracy:
-        print(f"Accuracy (eval mode): {correct / total:.2%}")
+        print(f"Accuracy (eval mode): {total_accuracy}")
 
     avg_loss = total_loss / len(dataloader)
-    return avg_loss
+    total_accuracy = (correct / total) * 100
+    return avg_loss, total_accuracy
 
 
 if __name__ == "__main__":
@@ -158,18 +161,20 @@ if __name__ == "__main__":
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
-    checkpoint_dir = 'checkpoints'
+    checkpoint_dir = os.path.join('..', 'checkpoints')  
     file_name = 'dim_4_layer_3.pth'
     full_path = os.path.join(checkpoint_dir, file_name)
 
     epoch = 42
+    total_accuray = 0 # this is for total evulate accuracy
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
-        evaluate_model(model, test_loader, show_accuracy=True)
+        avg_loss, eval_accuracy  = evaluate_model(model, test_loader, show_accuracy=True)
+        total_accuray = eval_accuracy
+
     except KeyboardInterrupt:
         pass
-
-
+    
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
@@ -177,7 +182,9 @@ if __name__ == "__main__":
         'model_state_dict': model.state_dict(),
         'train_loss_history': train_plot,
         'eval_loss_history': eval_plot,
-        'epoch': epoch 
+        'epoch': epoch,
+        'total_accuracy': total_accuray, # Just to keep track of what we are evulating
+        'd_model': model.d_model
     }
     torch.save(checkpoint, full_path)
     print(f"Successfully saved to: {full_path}")
