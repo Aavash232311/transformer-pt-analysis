@@ -146,21 +146,21 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     total_accuracy = (correct / total) * 100
     return avg_loss, total_accuracy
 
+vocab_size = 10
+batch_size = 16
+generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
+
+train_size = int(0.8 * len(generated_ds))
+test_size = len(generated_ds) - train_size
+train_ds, test_ds = random_split(generated_ds, [train_size, test_size])
+
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+test_loader = DataLoader(test_ds, batch_size=batch_size, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+
+model = MinimalTransformer(vocab_size=vocab_size).to(device)
+
 
 if __name__ == "__main__":
-    vocab_size = 10
-    batch_size = 16
-    generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
-
-    train_size = int(0.8 * len(generated_ds))
-    test_size = len(generated_ds) - train_size
-    train_ds, test_ds = random_split(generated_ds, [train_size, test_size])
-
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-
-    model = MinimalTransformer(vocab_size=vocab_size).to(device)
-
     checkpoint_dir = os.path.join('..', 'checkpoints')  
     file_name = 'dim_4_layer_3.pth'
     full_path = os.path.join(checkpoint_dir, file_name)
