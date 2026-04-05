@@ -14,8 +14,6 @@ class Analysis:
         self.model.load_state_dict(skeleton)
 
 
-
-
     def discrete_fourier_transform(self):
         self.model.eval()
 
@@ -23,6 +21,7 @@ class Analysis:
             Here we are doing a forward pass for logits making sure we don't have randomness
             from for example dropout.
         '''
+
         with torch.no_grad():
             for a in range(self.vocab_size):
                 for b in range(self.vocab_size):
@@ -40,7 +39,7 @@ class Analysis:
         for c in range(n):
             phi = self.logit_lattice[:, :, c]          # shape [n, n] one class slice
             self.fourier_lattice[:, :, c] = torch.fft.fft2(phi) / n   # eq. 17
-        
+
         self.power_spectrum = self.fourier_lattice.abs() ** 2  # shape [n, n, n] eqn 16, basically squaring
 
         return self.power_spectrum
