@@ -1,10 +1,10 @@
+import os
+import sys
 import time
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split
-import os
-import sys
 from pathlib import Path
+from torch.utils.data import Dataset, DataLoader, random_split
 
 PROJECT_ROOT = Path.cwd().parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -148,7 +148,8 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 vocab_size = 10
 batch_size = 16
-generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
+seq_len = 20
+generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
 train_size = int(0.8 * len(generated_ds))
 test_size = len(generated_ds) - train_size

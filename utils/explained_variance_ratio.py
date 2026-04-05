@@ -147,3 +147,17 @@ def accuracy_plot(accuracy):
     plt.axis('equal') 
     plt.title('Model Performance')
     plt.show()
+
+def heat_map_raw_lattice(logit_lattice, vocab_size):
+    fig, axes = plt.subplots(2, 5, figsize=(15, 6))
+
+    for c in range(vocab_size):
+        ax = axes[c // 5][c % 5]
+        ax.imshow(logit_lattice[:, :, c].cpu().numpy(), cmap='viridis')
+        ax.set_title(f'c = {c}')
+        ax.set_xlabel('b')
+        ax.set_ylabel('a')
+
+    plt.suptitle('logit_lattice[:, :, c] for all c')
+    plt.tight_layout()
+    plt.show()
