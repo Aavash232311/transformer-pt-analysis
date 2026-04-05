@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import torch
+import random
 import torch.nn as nn
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -18,17 +19,17 @@ Experimental Model
 class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10, num_samples=10000):
         self.mod = mod
-        self.global_seq = self.generate_fib_sequence(1000, mod)
         self.samples = []
         for _ in range(num_samples):
-            start_idx = torch.randint(0, len(self.global_seq) - seq_len - 1, (1,)).item()
-            seq = self.global_seq[start_idx:start_idx + seq_len + 1]
+            seq = self.generate_fib_sequence(seq_len + 1, mod)  # fresh per sample
             x = torch.tensor(seq[:-1], dtype=torch.long)
             y = torch.tensor(seq[1:], dtype=torch.long)
             self.samples.append((x, y))
 
     def generate_fib_sequence(self, length, mod):
-        seq = [1, 1]
+        a = random.randint(0, mod-1)
+        b = random.randint(0, mod-1)
+        seq = [a, b]
         while len(seq) < length:
             seq.append((seq[-1] + seq[-2]) % mod)
         return seq
@@ -38,7 +39,6 @@ class FibonacciModDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.samples[idx]
-
 
 class MLP(nn.Module):
     def __init__(self, d_model, expansion=4):
