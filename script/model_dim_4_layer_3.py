@@ -19,17 +19,17 @@ Experimental Model
 class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10, num_samples=10000):
         self.mod = mod
+        self.global_seq = self.generate_fib_sequence(30000, mod)
         self.samples = []
         for _ in range(num_samples):
-            seq = self.generate_fib_sequence(seq_len + 1, mod)  # fresh per sample
+            start_idx = torch.randint(0, len(self.global_seq) - seq_len - 1, (1,)).item()
+            seq = self.global_seq[start_idx:start_idx + seq_len + 1]
             x = torch.tensor(seq[:-1], dtype=torch.long)
             y = torch.tensor(seq[1:], dtype=torch.long)
             self.samples.append((x, y))
 
     def generate_fib_sequence(self, length, mod):
-        a = random.randint(0, mod-1)
-        b = random.randint(0, mod-1)
-        seq = [a, b]
+        seq = [1, 1]
         while len(seq) < length:
             seq.append((seq[-1] + seq[-2]) % mod)
         return seq
@@ -39,7 +39,7 @@ class FibonacciModDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.samples[idx]
-
+    
 class MLP(nn.Module):
     def __init__(self, d_model, expansion=4):
         super().__init__()
