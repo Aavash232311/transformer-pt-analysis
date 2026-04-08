@@ -173,9 +173,9 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 8
+batch_size = 6
 seq_len = 20
-generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
+generated_ds = FibonacciModDatasetSmallShample(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
 train_size = int(0.8 * len(generated_ds))
 test_size = len(generated_ds) - train_size
@@ -194,7 +194,7 @@ if __name__ == "__main__":
         file_name = "dim_4_layer_3_alterset.pth"
     full_path = os.path.join(checkpoint_dir, file_name)
 
-    epoch = 18
+    epoch = 25
     total_accuray = 0 # this is for total evulate accuracy
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)

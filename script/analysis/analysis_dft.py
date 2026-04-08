@@ -76,7 +76,7 @@ class Analysis:
         numerator = sum(S[m, m] for m in range(1, n))
         denominator = S.sum() - S[0, 0] # expect the 0,0 as in formula
         m_theta = numerator / denominator
-        print(f"Diagonal mass {m_theta}")
+        print(f"Diagonal spectral mass {m_theta}")
         
 
         return self.power_spectrum
