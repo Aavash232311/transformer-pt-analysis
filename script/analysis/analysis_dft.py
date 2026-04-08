@@ -54,7 +54,7 @@ class Analysis:
         self.fourier_lattice = torch.zeros(n, n, n, dtype=torch.complex64)
 
         for c in range(n):
-            phi = self.logit_lattice[:, :, c]          # shape [n, n] one class slice
+            phi = self.logit_lattice[:, :, c] # shape [n, n] one class slice
             self.fourier_lattice[:, :, c] = torch.fft.fft2(phi) / n   # eq. 17
 
         self.power_spectrum = self.fourier_lattice.abs() ** 2  # shape [n, n, n] eqn 16, basically squaring

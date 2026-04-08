@@ -40,6 +40,32 @@ class FibonacciModDataset(Dataset):
     def __getitem__(self, idx):
         return self.samples[idx]
     
+''' This one is a smaller shample, not 'smaller' but will see more unique paris '''
+class FibonacciModDatasetSmallShample(Dataset):
+    def __init__(self, seq_len=10, mod=10, num_samples=10000):
+        self.mod = mod
+        self.samples = []
+        for _ in range(num_samples):
+            seq = self.generate_fib_sequence(seq_len + 1, mod) 
+            x = torch.tensor(seq[:-1], dtype=torch.long)
+            y = torch.tensor(seq[1:], dtype=torch.long)
+            self.samples.append((x, y))
+
+    def generate_fib_sequence(self, length, mod):
+        a = random.randint(0, mod-1)
+        b = random.randint(0, mod-1)
+        seq = [a, b]
+        while len(seq) < length:
+            seq.append((seq[-1] + seq[-2]) % mod)
+        return seq
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        return self.samples[idx]
+
+
 class MLP(nn.Module):
     def __init__(self, d_model, expansion=4):
         super().__init__()
@@ -147,7 +173,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 16
+batch_size = 8
 seq_len = 20
 generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
@@ -164,9 +190,11 @@ model = MinimalTransformer(vocab_size=vocab_size).to(device)
 if __name__ == "__main__":
     checkpoint_dir = os.path.join('..', 'checkpoints')  
     file_name = 'dim_4_layer_3.pth'
+    if isinstance(generated_ds, FibonacciModDatasetSmallShample):
+        file_name = "dim_4_layer_3_alterset.pth"
     full_path = os.path.join(checkpoint_dir, file_name)
 
-    epoch = 42
+    epoch = 18
     total_accuray = 0 # this is for total evulate accuracy
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
