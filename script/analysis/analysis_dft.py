@@ -41,7 +41,7 @@ class Analysis:
                 expected = (x[:, -2] + x[:, -1]) % self.vocab_size  
                 correct += (pred == expected).sum().item()
                 total += x.shape[0]
-
+  
         print(f"correct: {correct}/{total} = {correct/total*100:.1f}%")
         print(f"unique (a,b) pairs seen: {(self.logit_lattice.sum(dim=-1) != 0).sum().item()}")
 
@@ -62,7 +62,23 @@ class Analysis:
         return self.power_spectrum
     
     def diagonal_sperectal_mass(self):
-        self.discrete_fourier_transform()
+        power_spectrum = self.discrete_fourier_transform()
+        # we need to reduce the dimension adding third col, to first and second
+        # we want to know total power at each frequency
+
+        ''' 
+        mass of a particle <-> how concentrated the energy is
+        light particle = spread out wave
+        heavy particle = localized, concentrated 
+        '''
+        n = self.vocab_size
+        S = power_spectrum.sum(dim=-1)
+        numerator = sum(S[m, m] for m in range(1, n))
+        denominator = S.sum() - S[0, 0] # expect the 0,0 as in formula
+        m_theta = numerator / denominator
+        print(f"Diagonal mass {m_theta}")
+        
+
         return self.power_spectrum
     
 
