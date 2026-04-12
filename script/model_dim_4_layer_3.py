@@ -5,6 +5,7 @@ import torch
 import random
 import torch.nn as nn
 from pathlib import Path
+import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
 
 PROJECT_ROOT = Path.cwd().parent
@@ -126,6 +127,8 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             logits = model(x)
+
+            print(F.softmax(x, dim=0))
             loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1))
             optimizer.zero_grad()
             loss.backward()
