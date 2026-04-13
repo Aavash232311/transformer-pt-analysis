@@ -5,14 +5,13 @@ import torch
 import random
 import torch.nn as nn
 from pathlib import Path
-import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
 
 PROJECT_ROOT = Path.cwd().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+print(device)
 ''''
 Experimental Model 
 
@@ -127,8 +126,6 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             logits = model(x)
-
-            print(F.softmax(x, dim=0))
             loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1))
             optimizer.zero_grad()
             loss.backward()
@@ -176,7 +173,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 6
+batch_size = 8
 seq_len = 20
 generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
@@ -197,7 +194,7 @@ if __name__ == "__main__":
         file_name = "dim_4_layer_3_alterset.pth"
     full_path = os.path.join(checkpoint_dir, file_name)
 
-    epoch = 22
+    epoch = 42
     total_accuray = 0 # this is for total evulate accuracy
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
