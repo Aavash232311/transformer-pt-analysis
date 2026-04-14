@@ -83,14 +83,14 @@ class MLP(nn.Module):
 
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=3, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=4, n_heads=2, num_layers=6, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
         self.vocab_size = vocab_size
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
-            nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.01)
+            nn.MultiheadAttention(d_model, n_heads, batch_first=True)
             for _ in range(num_layers)
         ])
         self.mlps = nn.ModuleList([
@@ -119,13 +119,13 @@ train_plot = []
 eval_plot = []
 epoch_d_masses = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
-    ''' For diagonal spectral mass let's analyse that class here '''
-    analysis = Analysis(vocab_size=model.vocab_size) 
+    # ''' For diagonal spectral mass let's analyse that class here '''
+    # analysis = Analysis(vocab_size=model.vocab_size) 
 
     for epoch in range(epochs):
         model.train()
@@ -142,18 +142,17 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
 
             ''' Diagonal spectral mass '''
 
-            d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
-            batch_d_masses.append(d_mass)
+            # d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
+            # batch_d_masses.append(d_mass)
 
-        epoch_d_mass = sum(batch_d_masses) / len(batch_d_masses)
-        epoch_d_masses.append(epoch_d_mass)
+   
         avg_loss = total_loss / len(dataloader)
         train_plot.append({'loss': avg_loss, 'epoch': epoch})
 
         model.eval()
         with torch.no_grad():
             ''' Wish we had something like 'out' like in c#, or I am not sure here '''
-            val_loss, total_acc = evaluate_model(model, test_loader) 
+            val_loss, total_acc = evaluate_model(model, test_loader, show_accuracy=False) 
             eval_plot.append(val_loss)
 
         avg_loss = total_loss / len(dataloader)
@@ -188,7 +187,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 8
+batch_size = 32
 seq_len = 20
 generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
@@ -203,19 +202,19 @@ model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
 
 if __name__ == "__main__":
-    checkpoint_dir = os.path.join('..', 'checkpoints')  
+
     file_name = 'dim_4_layer_3.pth'
     if isinstance(generated_ds, FibonacciModDatasetSmallShample):
         file_name = "dim_4_layer_3_alterset.pth"
+    checkpoint_dir = 'checkpoints'
     full_path = os.path.join(checkpoint_dir, file_name)
 
-    epoch = 42
+    epoch = 22
     total_accuray = 0 # this is for total evulate accuracy
     try:
         train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
         avg_loss, eval_accuracy  = evaluate_model(model, test_loader, show_accuracy=True)
         total_accuray = eval_accuracy
-
     except KeyboardInterrupt:
         pass
     
@@ -231,5 +230,5 @@ if __name__ == "__main__":
         'd_model': model.d_model,
         'd_mass': epoch_d_masses
     }
-    # torch.save(checkpoint, full_path)
-    # print(f"Successfully saved to: {full_path}")
+    torch.save(checkpoint, full_path)
+    print(f"Successfully saved to: {full_path}")

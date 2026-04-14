@@ -58,6 +58,7 @@ class MinimalTransformer(nn.Module):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
+        self.d_model = d_model
         self.layers = nn.ModuleList([
             nn.MultiheadAttention(d_model, n_heads, batch_first=True)
             for _ in range(num_layers)
@@ -86,7 +87,6 @@ class MinimalTransformer(nn.Module):
 train_plot = []
 eval_plot = []
 
-
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
@@ -95,6 +95,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
     for epoch in range(epochs):
         model.train()
         total_loss = 0
+
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             logits = model(x)
@@ -109,7 +110,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
 
         model.eval()
         with torch.no_grad():
-            val_loss = evaluate_model(model, test_loader)
+            val_loss, total_acc = evaluate_model(model, test_loader, show_accuracy=False) 
             eval_plot.append(val_loss)
 
         avg_loss = total_loss / len(dataloader)
@@ -135,18 +136,19 @@ def evaluate_model(model, dataloader, show_accuracy=False):
             correct += (pred[:, 1:] == y[:, 1:]).sum().item()
             total += y[:, 1:].numel()
 
+    total_accuracy = f"{correct / total:.2%}"
     if show_accuracy:
-        print(f"Accuracy (eval mode): {correct / total:.2%}")
+        print(f"Accuracy (eval mode): {total_accuracy}")
 
     avg_loss = total_loss / len(dataloader)
-    return avg_loss
-
+    total_accuracy = (correct / total) * 100
+    return avg_loss, total_accuracy
 
 if __name__ == "__main__":
     vocab_size = 10
     batch_size = 64
     generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
-
+    total_accuray = 0
     train_size = int(0.8 * len(generated_ds))
     test_size = len(generated_ds) - train_size
     train_ds, test_ds = random_split(generated_ds, [train_size, test_size])
@@ -156,13 +158,15 @@ if __name__ == "__main__":
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
-    checkpoint_dir = 'checkpoints'
+    
+    checkpoint_dir = os.path.join('..', 'checkpoints')  
     file_name = 'dim_6_mlp.pth'
     full_path = os.path.join(checkpoint_dir, file_name)
-
+    epoch = 28
     try:
-        train_model(model, train_loader, epochs=28, test_loader=test_loader)
-        evaluate_model(model, test_loader, show_accuracy=True)
+        train_model(model, train_loader, epochs=epoch, test_loader=test_loader)
+        avg_loss, eval_accuracy  = evaluate_model(model, test_loader, show_accuracy=True)
+        total_accuray = eval_accuracy
     except KeyboardInterrupt:
         pass
 
@@ -170,5 +174,14 @@ if __name__ == "__main__":
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
-    torch.save(model.state_dict(), full_path)
+
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'train_loss_history': train_plot,
+        'eval_loss_history': eval_plot,
+        'epoch': epoch,
+        'total_accuracy': total_accuray, # Just to keep track of what we are evulating
+        'd_model': model.d_model
+    }
+    torch.save(checkpoint, full_path)
     print(f"Successfully saved to: {full_path}")
