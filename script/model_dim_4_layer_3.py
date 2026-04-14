@@ -83,14 +83,14 @@ class MLP(nn.Module):
 
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=4, n_heads=2, num_layers=6, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=6, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
         self.vocab_size = vocab_size
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
-            nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+            nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.01)
             for _ in range(num_layers)
         ])
         self.mlps = nn.ModuleList([
@@ -119,7 +119,7 @@ train_plot = []
 eval_plot = []
 epoch_d_masses = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.01):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -187,7 +187,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 32
+batch_size = 16
 seq_len = 20
 generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 
