@@ -5,6 +5,7 @@ import torch
 import random
 import torch.nn as nn
 from pathlib import Path
+from script.analysis.analysis_dft import Analysis
 from torch.utils.data import Dataset, DataLoader, random_split
 
 PROJECT_ROOT = Path.cwd().parent
@@ -16,6 +17,8 @@ print(device)
 Experimental Model 
 
  '''
+
+
 class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10, num_samples=10000):
         self.mod = mod
@@ -84,6 +87,7 @@ class MinimalTransformer(nn.Module):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
+        self.vocab_size = vocab_size
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
             nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.01)
@@ -113,16 +117,20 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
-
+epoch_d_masses = []
 
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
+    ''' For diagonal spectral mass let's analyse that class here '''
+    analysis = Analysis(vocab_size=model.vocab_size) 
+
     for epoch in range(epochs):
         model.train()
         total_loss = 0
+        batch_d_masses = [] 
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             logits = model(x)
@@ -132,6 +140,13 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
             optimizer.step()
             total_loss += loss.item()
 
+            ''' Diagonal spectral mass '''
+
+            d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
+            batch_d_masses.append(d_mass)
+
+        epoch_d_mass = sum(batch_d_masses) / len(batch_d_masses)
+        epoch_d_masses.append(epoch_d_mass)
         avg_loss = total_loss / len(dataloader)
         train_plot.append({'loss': avg_loss, 'epoch': epoch})
 
@@ -213,7 +228,8 @@ if __name__ == "__main__":
         'eval_loss_history': eval_plot,
         'epoch': epoch,
         'total_accuracy': total_accuray, # Just to keep track of what we are evulating
-        'd_model': model.d_model
+        'd_model': model.d_model,
+        'd_mass': epoch_d_masses
     }
-    torch.save(checkpoint, full_path)
-    print(f"Successfully saved to: {full_path}")
+    # torch.save(checkpoint, full_path)
+    # print(f"Successfully saved to: {full_path}")
