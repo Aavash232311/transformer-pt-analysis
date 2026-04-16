@@ -33,7 +33,6 @@ def build_sequence(a, b, mod=10, seq_len=20):
 
     return x, y
 
-
 ''' from (a, b) array pairs retruns x, and y '''
 def pairs(arr, mod, seq_len):
     res = []
@@ -61,3 +60,26 @@ def get_missing_pairs(mod=10, seq_length=1000):
     for p in sorted(missing):
         print(f"  {p}")
     return found, missing
+
+
+def generate_pairs_start_point(x, y, mod=10, seq_length=20):
+
+    seq = [x, y]
+
+    while len(seq) < seq_length:
+        seq.append((seq[-1] - seq[-2]) % mod)
+    
+    points = []
+    for i in range(0, len(seq)):
+        fa = seq[i]
+
+        if i + 1 >= len(seq):
+            break
+
+        fb = seq[i + 1]
+        points.append((fa, fb))
+
+        if fa == seq[0] and fb == seq[1] and i > 0:
+            break # end of the loop
+
+    return points
