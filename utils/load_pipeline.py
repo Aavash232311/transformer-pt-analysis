@@ -1,4 +1,5 @@
 import torch
+import random
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -83,3 +84,45 @@ def generate_pairs_start_point(x, y, mod=10, seq_length=20):
             break # end of the loop
 
     return points
+
+
+''' We need to get the dataset with the unqiue pairs build backwards.
+    Unseen pairs should be 40 no matter the datalength,
+
+ '''
+class GenerateEvulatePairs(Dataset):
+
+    def __init__(self, dataset, mod):
+        self.dataset = dataset
+        self.mod = mod
+        pair_counters = set()
+
+        for a, b in self.dataset:
+            x = a[0].item()
+
+            y = a[1].item()
+            pair_counters.add((x, y))
+
+        all_pairs = {(a, b) for a in range(self.mod) for b in range(self.mod)}
+        unseen = list(all_pairs - pair_counters)
+
+        seq_len =  len(self.dataset[0][0])
+        self.samples = []
+
+
+        for a, b in unseen:           
+            seq = [a, b]
+            while len(seq) < seq_len + 1:
+                seq.insert(0, (seq[1] - seq[0]) % self.mod) # since it is a backward loop
+
+            x = torch.tensor(seq[:-1], dtype=torch.long)
+            y = torch.tensor(seq[1:],  dtype=torch.long)  
+            self.samples.append((x, y))
+
+    
+
+    def __len__(self):
+        return len(self.samples)
+    
+    def __getitem__(self, idx):
+        return self.samples[idx]
