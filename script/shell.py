@@ -2,7 +2,8 @@ import os
 import time
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
+from utils.load_pipeline import GenerateEvulatePairs
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -122,16 +123,10 @@ if __name__ == "__main__":
     vocab_size = 10
     batch_size = 128
     generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
+    eval_ds = GenerateEvulatePairs(generated_ds, mod=10)
 
-
-
-    train_size = int(0.8 * len(generated_ds))
-    test_size = len(generated_ds) - train_size
-    train_ds, test_ds = random_split(generated_ds, [train_size, test_size]) 
-
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-
+    train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    test_loader = DataLoader(eval_ds, batch_size=batch_size, shuffle=False,  num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
@@ -147,11 +142,11 @@ if __name__ == "__main__":
         file_name = f'v{i}.pth'
         full_path  = os.path.join(checkpoint_dir, file_name)
 
-        train_model(model, train_loader, epochs=200,test_loader=test_loader) 
-        evaluate_model(model, test_loader, show_accuracy=True)
+        # train_model(model, train_loader, epochs=200,test_loader=test_loader) 
+        evaluate_model(model, test_loader, show_accuracy=False)
 
         if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
             os.makedirs(checkpoint_dir)
 
-        torch.save(model.state_dict(), full_path) # save it right there
-        print(f"Successfully saved to: {full_path}")
+        # torch.save(model.state_dict(), full_path) # save it right there
+        # print(f"Successfully saved to: {full_path}")

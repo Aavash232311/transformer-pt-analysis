@@ -99,7 +99,6 @@ class GenerateEvulatePairs(Dataset):
 
         for a, b in self.dataset:
             x = a[0].item()
-
             y = a[1].item()
             pair_counters.add((x, y))
 
