@@ -34,12 +34,12 @@ class FibonacciModDataset(Dataset):
         return self.samples[idx]
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=8, n_heads=2, num_layers=1, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=32, n_heads=16, num_layers=6, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
-            nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+            nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.2)
             for _ in range(num_layers)
         ])
         self.out_proj = nn.Linear(d_model, vocab_size)
@@ -61,8 +61,8 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.00001):
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-3)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
     
@@ -121,8 +121,8 @@ def evaluate_model(model, dataloader, show_accuracy = False):
 
 if __name__ == "__main__":
     vocab_size = 10
-    batch_size = 128
-    generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=20)
+    batch_size = 64
+    generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=2)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=10)
 
     train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
@@ -135,18 +135,16 @@ if __name__ == "__main__":
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
 
-    check_len = 3
 
-    for i in range(2, 4):
-        checkpoint_dir = 'checkpoints'
-        file_name = f'v{i}.pth'
-        full_path  = os.path.join(checkpoint_dir, file_name)
+    checkpoint_dir = 'checkpoints'
+    file_name = f'new_ds.pth'
+    full_path  = os.path.join(checkpoint_dir, file_name)
 
-        # train_model(model, train_loader, epochs=200,test_loader=test_loader) 
-        evaluate_model(model, test_loader, show_accuracy=False)
+    train_model(model, train_loader, epochs=120,test_loader=test_loader) 
+    evaluate_model(model, test_loader, show_accuracy=True)
 
-        if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
-            os.makedirs(checkpoint_dir)
+    if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
+        os.makedirs(checkpoint_dir)
 
-        # torch.save(model.state_dict(), full_path) # save it right there
-        # print(f"Successfully saved to: {full_path}")
+    torch.save(model.state_dict(), full_path) # save it right there
+    print(f"Successfully saved to: {full_path}")
