@@ -89,7 +89,7 @@ class MLP(nn.Module):
 
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=3, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=64, n_heads=2, num_layers=2, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
@@ -125,8 +125,8 @@ train_plot = []
 eval_plot = []
 epoch_d_masses = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.01):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, decay=0.001):
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=decay)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
@@ -193,7 +193,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 vocab_size = 10
-batch_size = 16
+batch_size = 128
 seq_len = 20
 generated_ds = FibonacciModDatasetSmallShample(num_samples=25000, mod=vocab_size, seq_len=seq_len)
 

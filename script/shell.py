@@ -45,12 +45,12 @@ def encode(k, N):
     ], dim=-1)
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=8, n_heads=2, num_layers=2, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=4, n_heads=2, num_layers=2, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
         self.layers = nn.ModuleList([
-            nn.MultiheadAttention(d_model, n_heads, batch_first=True, dropout=0.4)
+            nn.MultiheadAttention(d_model, n_heads, batch_first=True)
             for _ in range(num_layers)
         ])
         self.out_proj = nn.Linear(d_model, vocab_size)
@@ -89,9 +89,9 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.01):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.002):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
+    loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
     for epoch in range(epochs):
@@ -124,7 +124,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.01):
 
 def evaluate_model(model, dataloader, show_accuracy=False):
     correct, total = 0, 0
-    loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
+    loss_fn = nn.CrossEntropyLoss()
     model.eval()
     total_loss = 0
 
@@ -147,9 +147,9 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 if __name__ == "__main__":
-    vocab_size = 53
-    epoch = 256
-    batch_size = 12
+    vocab_size = 10
+    epoch = 1000
+    batch_size = 16
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=2)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)

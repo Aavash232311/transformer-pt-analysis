@@ -87,7 +87,7 @@ class MinimalTransformer(nn.Module):
 train_plot = []
 eval_plot = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.008):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
