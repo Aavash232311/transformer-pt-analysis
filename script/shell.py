@@ -148,7 +148,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 if __name__ == "__main__":
     vocab_size = 10
-    epoch = 1000
+    epoch = 2500
     batch_size = 16
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=2)
