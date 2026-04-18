@@ -45,18 +45,24 @@ class FibonacciModDataset(Dataset):
     
 ''' This one is a smaller shample, not 'smaller' but will see more unique paris '''
 class FibonacciModDatasetSmallShample(Dataset):
-    def __init__(self, seq_len=10, mod=10, num_samples=10000):
+    def __init__(self, seq_len=10, mod=10, num_samples=10000, seeds=None):
         self.mod = mod
         self.samples = []
+
+        if seeds is None:
+            seeds = [(i, j) for i in range(mod) for j in range(mod)]
+
         for _ in range(num_samples):
-            seq = self.generate_fib_sequence(seq_len + 1, mod) 
+            a, b = random.choice(seeds)
+
+            seq = self.generate_fib_sequence(a, b, seq_len + 1, mod)
+
             x = torch.tensor(seq[:-1], dtype=torch.long)
             y = torch.tensor(seq[1:], dtype=torch.long)
+
             self.samples.append((x, y))
 
-    def generate_fib_sequence(self, length, mod):
-        a = random.randint(0, mod-1)
-        b = random.randint(0, mod-1)
+    def generate_fib_sequence(self, a, b, length, mod):
         seq = [a, b]
         while len(seq) < length:
             seq.append((seq[-1] + seq[-2]) % mod)
@@ -83,7 +89,7 @@ class MLP(nn.Module):
 
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=6, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=4, n_heads=1, num_layers=3, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.d_model = d_model
@@ -189,7 +195,8 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 vocab_size = 10
 batch_size = 16
 seq_len = 20
-generated_ds = FibonacciModDataset(num_samples=25000, mod=vocab_size, seq_len=seq_len)
+generated_ds = FibonacciModDatasetSmallShample(num_samples=25000, mod=vocab_size, seq_len=seq_len)
+
 
 train_size = int(0.8 * len(generated_ds))
 test_size = len(generated_ds) - train_size
@@ -206,6 +213,7 @@ if __name__ == "__main__":
     file_name = 'dim_4_layer_3.pth'
     if isinstance(generated_ds, FibonacciModDatasetSmallShample):
         file_name = "dim_4_layer_3_alterset.pth"
+
     checkpoint_dir = 'checkpoints'
     full_path = os.path.join(checkpoint_dir, file_name)
 
