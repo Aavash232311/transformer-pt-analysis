@@ -103,7 +103,9 @@ class GenerateEvulatePairs(Dataset):
 
         all_pairs = {(a, b) for a in range(self.mod) for b in range(self.mod)}
         unseen = list(all_pairs - pair_counters)
-        print(len(pair_counters))
+        print(f"All pairs {len(all_pairs)} mod {mod}")
+        print(f"Seen {len(pair_counters)}")
+        print(f"Unseen {len(unseen)}")
 
         seq_len =  len(self.dataset[0][0])
         self.samples = []

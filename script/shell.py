@@ -1,7 +1,8 @@
 import os
-import time
 import math
+import time
 import torch
+import random
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from utils.load_pipeline import GenerateEvulatePairs
@@ -13,8 +14,7 @@ class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10):
         self.mod = mod
         self.seq_len = seq_len
-
-        self.global_seq = self.generate_fib_sequence(1000, mod)
+        self.global_seq = self.generate_fib_sequence(length=10000, mod=mod)
 
         self.samples = []
         for i in range(0, len(self.global_seq) - seq_len - 1, seq_len):
@@ -25,11 +25,32 @@ class FibonacciModDataset(Dataset):
 
             self.samples.append((x, y))
 
+    ''' 
+        Small shample of data for training less harder to memorize, 
+        Accidently I have it only 9 seen pairs, and little gorking was seen.
+    '''
     def generate_fib_sequence(self, length, mod):
-        seq = [1, 1]
-        for _ in range(length - 2):
-            seq.append((seq[-1] + seq[-2]) % mod)
+        random.seed(42) 
+        all_pairs = [(a,b) for a in range(mod) for b in range(mod)]
+        random.shuffle(all_pairs)
+        
+
+        train_pairs = all_pairs[:int(0.2 * len(all_pairs))]  # 231 pairs
+        
+        seq = []
+        for a, b in train_pairs:
+            s = [a, b]
+            for _ in range(self.seq_len + 1):
+                s.append((s[-1] + s[-2]) % mod)
+            seq.extend(s)
+        
         return seq
+
+    # def generate_fib_sequence(self, length, mod):
+    #     seq = [1, 1]
+    #     for _ in range(length - 2):
+    #         seq.append((seq[-1] + seq[-2]) % mod)
+    #     return seq
 
     def __len__(self):
         return len(self.samples)
@@ -37,15 +58,9 @@ class FibonacciModDataset(Dataset):
     def __getitem__(self, idx):
         return self.samples[idx]
     
-def encode(k, N):
-    k = k.float().to(device)
-    return torch.stack([
-        torch.sin(2 * math.pi * k / N),
-        torch.cos(2 * math.pi * k / N)
-    ], dim=-1)
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=128, n_heads=4, num_layers=1, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=12, n_heads=3, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -60,16 +75,8 @@ class MinimalTransformer(nn.Module):
 
     def forward(self, tokens):
         B, T = tokens.shape
-        pos = torch.arange(T, device=tokens.device)
-
-
-        pos = torch.arange(T, device=tokens.device)
-
-        x = encode(tokens, self.vocab_size)      
-        x = self.input_proj(x)                 
-
-        pos_emb = self.pos_embed(pos)         
-        x = x + pos_emb.unsqueeze(0)        
+        pos = torch.arange(T, device=tokens.device)              
+        x = self.token_embed(tokens) + self.pos_embed(pos).unsqueeze(0)    
 
         mask = torch.full((T, T), float('-inf'), device=tokens.device)
         for i in range(T):
@@ -89,8 +96,9 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.003):
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
+
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
@@ -116,7 +124,39 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.003):
             eval_plot.append(val_loss)
 
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1}, Loss (Training): {avg_loss:.4f} Loss(val): {val_loss:.4f}")
+
+        if (epoch + 1) % 500 == 0:
+            checkpoint_dir = 'checkpoints'
+            file_name = f'new_ds.pth'
+            full_path  = os.path.join(checkpoint_dir, file_name)
+            if not os.path.exists(checkpoint_dir): 
+                os.makedirs(checkpoint_dir)
+
+            checkpoint = {
+                'model_state_dict': model.state_dict(),
+                'train_loss_history': train_plot,
+                'eval_loss_history': eval_plot,
+                'epoch': epoch,
+                'total_accuracy': total_accuray,
+                'd_model': model.d_model
+            }
+            torch.save(checkpoint, full_path) 
+            print(f"Successfully saved to: {full_path}", "- " * 20, "Checkpoint saved")
+
+        current_wd = optimizer.param_groups[0]['weight_decay']
+        # if avg_loss < 0.05 and current_wd == 0.0:  # let it memorize first.
+        #     for g in optimizer.param_groups:
+        #         g['weight_decay'] = 1.9
+        #         g['lr'] = 0.015
+        #     print("Switched to weight decay phase")
+
+        # if epoch >= 500:
+        #     for g in optimizer.param_groups:
+        #         g['lr'] = 0.00001
+        current_lr = optimizer.param_groups[0]['lr']
+
+        print(f"Epoch {epoch+1}, Loss (Training): {avg_loss:.4f} Loss(val): {val_loss:.4f} Learning rate(eta): {current_lr:.10f} weight decay {current_wd}")
+
 
     end_time = time.time()
     print(f"Total Training Time: {end_time - start_time:.2f} seconds")
@@ -147,11 +187,11 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 if __name__ == "__main__":
-    vocab_size = 8
-    epoch = 1000
-    batch_size = 16
+    vocab_size = 10
+    epoch = 200000
+    batch_size = 19
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=2)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
     train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
@@ -187,3 +227,5 @@ if __name__ == "__main__":
     }
     torch.save(checkpoint, full_path) 
     print(f"Successfully saved to: {full_path}")
+
+    
