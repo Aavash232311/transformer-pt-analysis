@@ -45,7 +45,7 @@ def encode(k, N):
     ], dim=-1)
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=4, n_heads=2, num_layers=2, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=128, n_heads=4, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -89,7 +89,7 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.002):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.003):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -147,8 +147,8 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 if __name__ == "__main__":
-    vocab_size = 10
-    epoch = 2500
+    vocab_size = 8
+    epoch = 1000
     batch_size = 16
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=2)
