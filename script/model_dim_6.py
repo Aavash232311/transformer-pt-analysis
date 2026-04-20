@@ -1,10 +1,11 @@
+import os
+import sys
 import time
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split
-import os
-import sys
 from pathlib import Path
+from analysis.analysis_dft import Analysis
+from torch.utils.data import Dataset, DataLoader, random_split
 
 PROJECT_ROOT = Path.cwd().parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -92,6 +93,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
+    analysis = Analysis(vocab_size=model.vocab_size) 
     for epoch in range(epochs):
         model.train()
         total_loss = 0

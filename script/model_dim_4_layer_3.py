@@ -124,14 +124,15 @@ class MinimalTransformer(nn.Module):
 train_plot = []
 eval_plot = []
 epoch_d_masses = []
+epoch_masses = []
 
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, decay=0.001):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=decay)
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
-    # ''' For diagonal spectral mass let's analyse that class here '''
-    # analysis = Analysis(vocab_size=model.vocab_size) 
+    ''' For diagonal spectral mass let's analyse that class here '''
+    analysis = Analysis(vocab_size=model.vocab_size) 
 
     for epoch in range(epochs):
         model.train()
@@ -147,11 +148,10 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, decay=0.001
             total_loss += loss.item()
 
             ''' Diagonal spectral mass '''
-
-            # d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
-            # batch_d_masses.append(d_mass)
-
+            d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
+            batch_d_masses.append(d_mass)
    
+        epoch_masses.append(sum(batch_d_masses) / len(batch_d_masses))
         avg_loss = total_loss / len(dataloader)
         train_plot.append({'loss': avg_loss, 'epoch': epoch})
 

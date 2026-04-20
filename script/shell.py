@@ -1,9 +1,9 @@
 import os
-import math
 import time
 import torch
 import random
 import torch.nn as nn
+from .analysis.analysis_dft import Analysis
 from torch.utils.data import Dataset, DataLoader
 from utils.load_pipeline import GenerateEvulatePairs
 
@@ -96,15 +96,19 @@ class MinimalTransformer(nn.Module):
 
 train_plot = []
 eval_plot = []
+epoch_masses = []
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
 
+    analysis = Analysis(vocab_size=model.vocab_size) 
+
     for epoch in range(epochs):
         model.train()
         total_loss = 0
+        batch_d_masses = []
 
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
@@ -115,8 +119,13 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
             optimizer.step()
             total_loss += loss.item()
 
+            ''' Diagonal spectral mass '''
+            d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
+            batch_d_masses.append(d_mass)
+
         avg_loss = total_loss / len(dataloader)
         train_plot.append({'loss': avg_loss, 'epoch': epoch})
+        epoch_masses.append(sum(batch_d_masses) / len(batch_d_masses))
 
         model.eval()
         with torch.no_grad():
@@ -188,7 +197,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 if __name__ == "__main__":
     vocab_size = 10
-    epoch = 200000
+    epoch = 1500
     batch_size = 19
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
@@ -223,7 +232,8 @@ if __name__ == "__main__":
         'eval_loss_history': eval_plot,
         'epoch': epoch,
         'total_accuracy': total_accuray,
-        'd_model': model.d_model
+        'd_model': model.d_model,
+        "d_mass": epoch_masses
     }
     torch.save(checkpoint, full_path) 
     print(f"Successfully saved to: {full_path}")

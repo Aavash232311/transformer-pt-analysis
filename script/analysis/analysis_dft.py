@@ -34,6 +34,7 @@ class Analysis:
             self.model.load_state_dict(skeleton)
         self.data = data
 
+    ''' Expects two arguments preferred_logits and x if we want to analysis during the training. '''
     def discrete_fourier_transform(self, **kwargs):
 
         ''' 
