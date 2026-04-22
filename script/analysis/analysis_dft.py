@@ -2,6 +2,13 @@ import torch
 from utils.explained_variance_ratio import heat_map_raw_lattice
 
 
+
+''' 
+WE ARE INITILIZING ANALYSIS ABOVE THE EPOCH.
+AND THEN USING THIS SAME CLASS, BE CAREFUL WITH THE DEFINING THE 
+VALUES IN THE CONSTRUCTOR, MEMORY WILL LEAK.
+
+'''
 class Analysis:
 
     def __init__(self, **kwargs):
@@ -14,10 +21,6 @@ class Analysis:
         
         self.vocab_size = vocab_size
 
-        # logit_lattice[a, b, c]
-        self.logit_lattice = torch.zeros(vocab_size, vocab_size, vocab_size)
-
-        self.uncentered_lattice = torch.zeros(vocab_size, vocab_size, vocab_size) # copy to see it in heatmap
 
         if 'model' in kwargs:
             self.model = model.to(self.device)
@@ -36,7 +39,10 @@ class Analysis:
 
     ''' Expects two arguments preferred_logits and x if we want to analysis during the training. '''
     def discrete_fourier_transform(self, **kwargs):
+        n = self.vocab_size
+        logit_lattice = torch.zeros(n, n, n, device=self.device)
 
+    
         ''' 
             Here we are doing a forward pass for logits making sure we don't have randomness
             from for example dropout.
@@ -53,7 +59,7 @@ class Analysis:
             for i in range(x.shape[0]):
                 a = x[i, -2].item()  
                 b = x[i, -1].item() 
-                self.logit_lattice[a, b] = logits[i, -1, :] 
+                logit_lattice[a, b] = logits[i, -1, :] 
 
         else:
             '''
@@ -70,7 +76,7 @@ class Analysis:
                     for i in range(x.shape[0]):
                         a = x[i, -2].item()   # second to last token
                         b = x[i, -1].item()   # last token
-                        self.logit_lattice[a, b] = logits[i, -1, :] 
+                        logit_lattice[a, b] = logits[i, -1, :] 
 
                     pred = logits[:, -1, :].argmax(dim=-1)     
                     expected = (x[:, -2] + x[:, -1]) % self.vocab_size  
@@ -78,25 +84,24 @@ class Analysis:
                     total += x.shape[0]
     
             print(f"correct: {correct}/{total} = {correct/total*100:.1f}%")
-            print(f"unique (a,b) pairs seen: {(self.logit_lattice.sum(dim=-1) != 0).sum().item()}")
+            print(f"unique (a,b) pairs seen: {(logit_lattice.sum(dim=-1) != 0).sum().item()}")
  
  
-        self.uncentered_lattice = self.logit_lattice
         # ℓ̃ (c|a,b) = ℓ(c|a,b) - (1/n) Σ ℓ(c'|a,b) centered logits
-        self.logit_lattice = self.logit_lattice - self.logit_lattice.mean(dim=-1, keepdim=True)
+        logit_lattice = logit_lattice - logit_lattice.mean(dim=-1, keepdim=True)
 
         n = self.vocab_size
 
-        self.fourier_lattice = torch.zeros(n, n, n, dtype=torch.complex64)
+        fourier_lattice = torch.zeros(n, n, n, dtype=torch.complex64)
 
  
         for c in range(n):
-            phi = self.logit_lattice[:, :, c] # shape [n, n] one class slice
-            self.fourier_lattice[:, :, c] = torch.fft.fft2(phi) / n   # eq. 17
+            phi = logit_lattice[:, :, c] # shape [n, n] one class slice
+            fourier_lattice[:, :, c] = torch.fft.fft2(phi) / n   # eq. 17
 
-        self.power_spectrum = self.fourier_lattice.abs() ** 2  # shape [n, n, n] eqn 16, basically squaring
+        power_spectrum = fourier_lattice.abs() ** 2  # shape [n, n, n] eqn 16, basically squaring
 
-        return self.power_spectrum
+        return power_spectrum
         
     ''' 
         The 'preferred_logits' is passed when we want to analyse 
@@ -125,11 +130,13 @@ class Analysis:
         S = power_spectrum.sum(dim=-1)
         numerator = sum(S[m, m] for m in range(1, n))
         denominator = S.sum() - S[0, 0] # expect the 0,0 as in formula
-        m_theta = numerator / denominator
+        m_theta = (numerator / denominator).item()
         
         return m_theta
     
-
+    ''' This is not functional right now. 
+        We can remove this.
+    '''
     def heat_map(self):
         heat_map_raw_lattice(self.uncentered_lattice, self.vocab_size) # it's centered a unchanged after that
 

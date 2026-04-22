@@ -174,7 +174,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
 
         train_accuracy.append((correct / total) * 100)
 
-        if (epoch + 1) % 150 == 0:
+        if (epoch + 1) % 100 == 0:
             checkpoint_dir = 'checkpoints'
             file_name = f'new_ds.pth'
             full_path  = os.path.join(checkpoint_dir, file_name)
@@ -186,13 +186,13 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
                 'train_loss_history': train_plot,
                 'eval_loss_history': eval_plot,
                 'epoch': epoch,
-                'total_accuracy': total_accuray,
                 'd_model': model.d_model,
                 'test_accuracy': test_accuracy,
                 'train_accuracy': train_accuracy
             }
             torch.save(checkpoint, full_path) 
             print(f"Successfully saved to: {full_path}", "- " * 20, "Checkpoint saved")
+            print("10 interval")
 
         current_wd = optimizer.param_groups[0]['weight_decay']
         # if avg_loss < 0.05 and current_wd == 0.0:  # let it memorize first.
