@@ -238,10 +238,12 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     total_accuracy = (correct / total) * 100
     return avg_loss, total_accuracy
 
-if __name__ == "__main__":
-    vocab_size = 97
-    epoch = 500
-    batch_size = 2757 # change this as soon as you change the mod/vocab_size to make it a full batch.
+
+
+def execute():
+    vocab_size = 123
+    epoch = 1000
+    batch_size = 28 # change this as soon as you change the mod/vocab_size to make it a full batch.
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
@@ -284,4 +286,6 @@ if __name__ == "__main__":
     torch.save(checkpoint, full_path) 
     print(f"Successfully saved to: {full_path}")
 
+if __name__ == "__main__":
+    execute()
     
