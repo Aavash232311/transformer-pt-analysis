@@ -174,7 +174,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
 
         train_accuracy.append((correct / total) * 100)
 
-        if (epoch + 1) % 500 == 0:
+        if (epoch + 1) % 150 == 0:
             checkpoint_dir = 'checkpoints'
             file_name = f'new_ds.pth'
             full_path  = os.path.join(checkpoint_dir, file_name)
@@ -239,9 +239,9 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 if __name__ == "__main__":
-    vocab_size = 11
+    vocab_size = 97
     epoch = 500
-    batch_size = 31 # change this as soon as you change the mod/vocab_size to make it a full batch.
+    batch_size = 2757 # change this as soon as you change the mod/vocab_size to make it a full batch.
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
