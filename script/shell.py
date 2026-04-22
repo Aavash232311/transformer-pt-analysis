@@ -14,7 +14,7 @@ class FibonacciModDataset(Dataset):
     def __init__(self, seq_len=10, mod=10):
         self.mod = mod
         self.seq_len = seq_len
-        self.global_seq = self.generate_fib_sequence(length=10000, mod=mod)
+        self.global_seq = self.generate_fib_sequence(mod=mod)
 
         self.samples = []
         for i in range(0, len(self.global_seq) - seq_len - 1, seq_len):
@@ -29,13 +29,13 @@ class FibonacciModDataset(Dataset):
         Small shample of data for training less harder to memorize, 
         Accidently I have it only 9 seen pairs, and little gorking was seen.
     '''
-    def generate_fib_sequence(self, length, mod):
+    def generate_fib_sequence(self, mod):
         random.seed(42) 
         all_pairs = [(a,b) for a in range(mod) for b in range(mod)]
         random.shuffle(all_pairs)
         
 
-        train_pairs = all_pairs[:int(0.2 * len(all_pairs))]  # 231 pairs
+        train_pairs = all_pairs[:int(0.3 * len(all_pairs))]  # ex:- 231 pairs
         
         seq = []
         for a, b in train_pairs:
@@ -59,8 +59,21 @@ class FibonacciModDataset(Dataset):
         return self.samples[idx]
     
 
+class MLP(nn.Module):
+    def __init__(self, d_model, hidden_layer=512):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(d_model, hidden_layer),
+            nn.GELU(),
+            nn.Linear(hidden_layer, d_model),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+    
+
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=12, n_heads=3, num_layers=1, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=128, n_heads=4, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -68,6 +81,13 @@ class MinimalTransformer(nn.Module):
             nn.MultiheadAttention(d_model, n_heads, batch_first=True)
             for _ in range(num_layers)
         ])
+
+        self.mlps = nn.ModuleList([
+            MLP(d_model)
+            for _ in range(num_layers)
+        ])
+
+
         self.out_proj = nn.Linear(d_model, vocab_size)
         self.vocab_size = vocab_size
         self.input_proj = nn.Linear(2, d_model)
@@ -83,10 +103,11 @@ class MinimalTransformer(nn.Module):
             for j in range(max(0, i-2), i+1):
                 mask[i, j] = 0.0
 
-
-        for attn in self.layers:
+        for attn, mlp in zip(self.layers, self.mlps):
             attn_out, _ = attn(x, x, x, attn_mask=mask)
-            x = x + attn_out
+            x = x + attn_out  
+            x = x + mlp(x)
+            
         return self.out_proj(x)
     
     def get_embeddings(self):
@@ -98,7 +119,7 @@ train_plot = []
 eval_plot = []
 epoch_masses = []
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -196,14 +217,14 @@ def evaluate_model(model, dataloader, show_accuracy=False):
     return avg_loss, total_accuracy
 
 if __name__ == "__main__":
-    vocab_size = 10
-    epoch = 1500
-    batch_size = 19
+    vocab_size = 11
+    epoch = 5000
+    batch_size = 31 # change this as soon as you change the mod/vocab_size to make it a full batch.
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
-    train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
     test_loader = DataLoader(eval_ds, batch_size=batch_size, shuffle=False,  num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
