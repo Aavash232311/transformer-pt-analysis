@@ -118,6 +118,10 @@ class MinimalTransformer(nn.Module):
 train_plot = []
 eval_plot = []
 epoch_masses = []
+
+train_accuracy = []
+test_accuracy = []
+
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
 
@@ -129,6 +133,9 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
     for epoch in range(epochs):
         model.train()
         total_loss = 0
+
+        correct = 0
+        total = 0
         batch_d_masses = []
 
         for x, y in dataloader:
@@ -140,6 +147,11 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
             optimizer.step()
             total_loss += loss.item()
 
+            ''' For training accuracy. '''
+            pred = logits.argmax(dim=-1)
+            correct += (pred[:, 1:] == y[:, 1:]).sum().item()
+            total += y[:, 1:].numel()
+
             ''' Diagonal spectral mass '''
             d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
             batch_d_masses.append(d_mass)
@@ -150,10 +162,17 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
 
         model.eval()
         with torch.no_grad():
-            val_loss, total_acc = evaluate_model(model, test_loader, show_accuracy=False) 
+            ''' evulate_model returns the loss and accuracy per epoch. '''
+            val_loss, eval_accuracy = evaluate_model(model, test_loader, show_accuracy=False) 
+            ''' Here we have accuray per ecpoh so we can append that in train accuracy '''
+            test_accuracy.append({"epoch": epoch, "test_accuracy": eval_accuracy}) # for testing accuracy.
             eval_plot.append(val_loss)
 
+        model.train()
         avg_loss = total_loss / len(dataloader)
+
+
+        train_accuracy.append((correct / total) * 100)
 
         if (epoch + 1) % 500 == 0:
             checkpoint_dir = 'checkpoints'
@@ -168,7 +187,9 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
                 'eval_loss_history': eval_plot,
                 'epoch': epoch,
                 'total_accuracy': total_accuray,
-                'd_model': model.d_model
+                'd_model': model.d_model,
+                'test_accuracy': test_accuracy,
+                'train_accuracy': train_accuracy
             }
             torch.save(checkpoint, full_path) 
             print(f"Successfully saved to: {full_path}", "- " * 20, "Checkpoint saved")
@@ -185,6 +206,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
         #         g['lr'] = 0.00001
         current_lr = optimizer.param_groups[0]['lr']
 
+        
         print(f"Epoch {epoch+1}, Loss (Training): {avg_loss:.4f} Loss(val): {val_loss:.4f} Learning rate(eta): {current_lr:.10f} weight decay {current_wd}")
 
 
@@ -218,7 +240,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 if __name__ == "__main__":
     vocab_size = 11
-    epoch = 5000
+    epoch = 500
     batch_size = 31 # change this as soon as you change the mod/vocab_size to make it a full batch.
     total_accuray = 0
     generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
@@ -254,7 +276,10 @@ if __name__ == "__main__":
         'epoch': epoch,
         'total_accuracy': total_accuray,
         'd_model': model.d_model,
-        "d_mass": epoch_masses
+        "d_mass": epoch_masses,
+        'test_accuracy': test_accuracy,
+        'train_accuracy': train_accuracy
+
     }
     torch.save(checkpoint, full_path) 
     print(f"Successfully saved to: {full_path}")

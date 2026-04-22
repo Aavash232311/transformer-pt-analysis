@@ -48,13 +48,33 @@ def explained_variance(full_path, model, pc):
                     ha='center')
 
     plt.xlabel('Number of Principal Components')
+
     plt.ylabel('Cumulative Explained Variance Ratio')
     plt.title('Cumulative Explained Variance Ratio by Principal Components')
 
     plt.show()
 
 
+
+''' Returns a plot for accuracy just like x '''
+def accuracy_overdt(test, train):
+    epochs = [x['epoch'] for x in test]
+    test_acc = [x['test_accuracy'] for x in test]
+
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(epochs, test_acc, label='Training accuracy (%)', color='#2563EB', linewidth=2)
+    plt.plot(epochs, train, label='Evaluation accuracy (%)', color='#059669', linewidth=2)
+
+    plt.title('Training vs Testing Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.show()
+
 def overfitting_plot(train_history, eval_losses):
+    # iterating two times large run itme complixity but fine for now.
     epochs = [x['epoch'] for x in train_history]
     train_losses = [x['loss'] for x in train_history]
 
@@ -161,3 +181,6 @@ def heat_map_raw_lattice(logit_lattice, vocab_size):
     plt.suptitle('logit_lattice[:, :, c] for all c')
     plt.tight_layout()
     plt.show()
+
+
+
