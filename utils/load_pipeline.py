@@ -96,10 +96,10 @@ class GenerateEvulatePairs(Dataset):
         self.mod = mod
         pair_counters = set()
 
-        for a, b in self.dataset:
-            x = a[0].item()
-            y = a[1].item()
-            pair_counters.add((x, y))
+        for x_seq, y_seq in self.dataset:
+            for i in range(len(x_seq) - 1):
+                pair_counters.add((x_seq[i].item(), x_seq[i+1].item()))
+
 
         all_pairs = {(a, b) for a in range(self.mod) for b in range(self.mod)}
         unseen = list(all_pairs - pair_counters)
@@ -111,14 +111,15 @@ class GenerateEvulatePairs(Dataset):
         self.samples = []
 
 
-        for a, b in unseen:           
+        for a, b in unseen:
             seq = [a, b]
             while len(seq) < seq_len + 1:
-                seq.insert(0, (seq[1] - seq[0]) % self.mod) # since it is a backward loop
-
+                seq.insert(0, (seq[1] - seq[0]) % self.mod)
+            
             x = torch.tensor(seq[:-1], dtype=torch.long)
-            y = torch.tensor(seq[1:],  dtype=torch.long)  
+            y = torch.tensor(seq[1:],  dtype=torch.long)
             self.samples.append((x, y))
+
 
     def __len__(self):
         return len(self.samples)

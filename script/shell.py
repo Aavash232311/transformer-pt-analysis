@@ -17,34 +17,47 @@ class FibonacciModDataset(Dataset):
         self.global_seq = self.generate_fib_sequence(mod=mod)
 
         self.samples = []
-        for i in range(0, len(self.global_seq) - seq_len - 1, seq_len):
-            seq = self.global_seq[i : i + seq_len + 1]
+        ''' 
+            samples is just list of list, 
+            each list of list is a pair generated
+        '''
 
-            x = torch.tensor(seq[:-1], dtype=torch.long)
-            y = torch.tensor(seq[1:], dtype=torch.long)
-
+        for _ in range(len(self.global_seq)):
+            arr = self.global_seq[_]
+            x = torch.tensor(arr[:-1], dtype=torch.long)
+            y = torch.tensor(arr[1:], dtype=torch.long)
             self.samples.append((x, y))
+
 
     ''' 
         Small shample of data for training less harder to memorize, 
         Accidently I have it only 9 seen pairs, and little gorking was seen.
     '''
     def generate_fib_sequence(self, mod):
-        random.seed(42) 
-        all_pairs = [(a,b) for a in range(mod) for b in range(mod)]
+        random.seed(42)
+        all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
         random.shuffle(all_pairs)
-        
 
-        train_pairs = all_pairs[:int(0.3 * len(all_pairs))]  # ex:- 231 pairs
-        
-        seq = []
+
+        train_pairs = all_pairs[:int(0.3 * len(all_pairs))]  
+    
+        sequences = []
+
         for a, b in train_pairs:
+                
             s = [a, b]
-            for _ in range(self.seq_len + 1):
+            for _ in range(self.seq_len - 1):
                 s.append((s[-1] + s[-2]) % mod)
-            seq.extend(s)
-        
-        return seq
+                
+            
+            # # track pairs this sequence adds
+            # for i in range(len(s) - 1): # that generated mesh also accouts for seen pairs.
+            #     seen_pairs.add((s[i], s[i+1]))
+            
+            sequences.append(s)
+     
+        return sequences
+
 
     # def generate_fib_sequence(self, length, mod):
     #     seq = [1, 1]
@@ -57,15 +70,16 @@ class FibonacciModDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.samples[idx]
-    
 
 class MLP(nn.Module):
-    def __init__(self, d_model, hidden_layer=512):
+    def __init__(self, d_model, hidden_layer):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(d_model, hidden_layer),
             nn.GELU(),
-            nn.Linear(hidden_layer, d_model),
+            nn.Linear(hidden_layer, hidden_layer),
+            nn.GELU(),
+            nn.Linear(hidden_layer, d_model),  
         )
 
     def forward(self, x):
@@ -73,7 +87,7 @@ class MLP(nn.Module):
     
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=128, n_heads=4, num_layers=1, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=64, n_heads=2, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -83,7 +97,7 @@ class MinimalTransformer(nn.Module):
         ])
 
         self.mlps = nn.ModuleList([
-            MLP(d_model)
+            MLP(d_model, hidden_layer=256)
             for _ in range(num_layers)
         ])
 
@@ -123,7 +137,7 @@ train_accuracy = []
 test_accuracy = []
 
 def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0009)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -241,15 +255,28 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 123
-    epoch = 1000
-    batch_size = 28 # change this as soon as you change the mod/vocab_size to make it a full batch.
+    vocab_size = 97
+    epoch = 600
+
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=3)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
-    train_loader = DataLoader(generated_ds, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
-    test_loader = DataLoader(eval_ds, batch_size=batch_size, shuffle=False,  num_workers=8, pin_memory=True, persistent_workers=True, prefetch_factor=4)
+    train_loader = DataLoader(
+        generated_ds, 
+        batch_size=len(generated_ds),  # Full batch loading.
+        shuffle=False, 
+        num_workers=0,   
+        pin_memory=True
+    )
+
+    test_loader = DataLoader(
+        eval_ds, 
+        batch_size=len(eval_ds),     
+        shuffle=False, 
+        num_workers=0,   
+        pin_memory=True
+    )
 
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
