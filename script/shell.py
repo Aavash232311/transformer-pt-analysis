@@ -39,7 +39,7 @@ class FibonacciModDataset(Dataset):
         random.shuffle(all_pairs)
 
 
-        train_pairs = all_pairs[:int(0.3 * len(all_pairs))]  
+        train_pairs = all_pairs[:int(0.2 * len(all_pairs))] 
     
         sequences = []
 
@@ -55,7 +55,7 @@ class FibonacciModDataset(Dataset):
             #     seen_pairs.add((s[i], s[i+1]))
             
             sequences.append(s)
-     
+
         return sequences
 
 
@@ -87,7 +87,7 @@ class MLP(nn.Module):
     
 
 class MinimalTransformer(nn.Module):
-    def __init__(self, vocab_size, d_model=64, n_heads=2, num_layers=1, max_seq_len=20):
+    def __init__(self, vocab_size, d_model=128, n_heads=4, num_layers=1, max_seq_len=20):
         super().__init__()
         self.token_embed = nn.Embedding(vocab_size, d_model)
         self.pos_embed = nn.Embedding(max_seq_len, d_model)
@@ -97,7 +97,7 @@ class MinimalTransformer(nn.Module):
         ])
 
         self.mlps = nn.ModuleList([
-            MLP(d_model, hidden_layer=256)
+            MLP(d_model, hidden_layer=512)
             for _ in range(num_layers)
         ])
 
@@ -136,8 +136,8 @@ epoch_masses = []
 train_accuracy = []
 test_accuracy = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.001):
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0009)
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.009):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.001)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -256,10 +256,10 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 def execute():
     vocab_size = 97
-    epoch = 600
+    epoch = 30000
 
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=3)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
     train_loader = DataLoader(
@@ -291,7 +291,7 @@ def execute():
     full_path  = os.path.join(checkpoint_dir, file_name)
 
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader) 
-    avg_loss, eval_accuracy  = evaluate_model(model, test_loader, show_accuracy=True)
+    evaluate_model(model, test_loader, show_accuracy=True)
 
 
 

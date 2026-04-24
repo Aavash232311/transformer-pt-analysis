@@ -96,9 +96,10 @@ class GenerateEvulatePairs(Dataset):
         self.mod = mod
         pair_counters = set()
 
-        for x_seq, y_seq in self.dataset:
-            for i in range(len(x_seq) - 1):
-                pair_counters.add((x_seq[i].item(), x_seq[i+1].item()))
+        for x_seq, y_seq in dataset:
+            a = x_seq[0].item()
+            b = x_seq[1].item()
+            pair_counters.add((a, b))
 
 
         all_pairs = {(a, b) for a in range(self.mod) for b in range(self.mod)}
