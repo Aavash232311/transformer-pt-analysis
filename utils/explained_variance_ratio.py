@@ -183,4 +183,61 @@ def heat_map_raw_lattice(logit_lattice, vocab_size):
     plt.show()
 
 
+''' For multiple plots d-mass, loss, accuracy '''
+def plot_checkpoints(checkpoint_files, checkpoint_dir='../checkpoints/temp'):
+    
+    fig, axes = plt.subplots(len(checkpoint_files), 3, figsize=(18, 5 * len(checkpoint_files)))
+    
 
+    if len(checkpoint_files) == 1:
+        axes = axes.reshape(1, -1)
+    
+    for i, filename in enumerate(checkpoint_files):
+        full_path = os.path.join(checkpoint_dir, filename)
+        checkpoint = torch.load(full_path)
+
+        train_plot     = checkpoint['train_loss_history']
+        eval_plot      = checkpoint['eval_loss_history']
+        train_accuracy = checkpoint.get("train_accuracy")
+        test_accuracy  = checkpoint.get("test_accuracy")
+        d_mass_history = checkpoint.get("d_mass")
+        dimension      = checkpoint.get("d_model")
+        weight_decay   = checkpoint.get("weight_decay")
+        vocab_size     = checkpoint.get("vocab_size")
+
+        train_losses   = [d['loss'] for d in train_plot]
+        train_epochs   = [d['epoch'] for d in train_plot]
+        test_acc_vals  = [d['test_accuracy'] for d in test_accuracy]
+
+        # loss
+        axes[i, 0].plot(train_epochs, train_losses, color='red', label='Training Loss')
+        axes[i, 0].plot(eval_plot, color='orange', label='Evaluation Loss')
+        axes[i, 0].set_title(f'{filename} — Loss (wd={weight_decay}, mod={vocab_size})')
+        axes[i, 0].set_xlabel('Epochs')
+        axes[i, 0].set_ylabel('Loss')
+        axes[i, 0].legend()
+        axes[i, 0].grid(True, linestyle='--', alpha=0.7)
+
+        # accuracy
+        axes[i, 1].plot(train_accuracy, color='blue', label='Training Accuracy (%)')
+        axes[i, 1].plot(test_acc_vals, color='green', label='Evaluation Accuracy (%)')
+        axes[i, 1].set_title(f'{filename} — Accuracy')
+        axes[i, 1].set_xlabel('Epochs')
+        axes[i, 1].set_ylabel('Accuracy (%)')
+        axes[i, 1].legend()
+        axes[i, 1].grid(True, linestyle='--', alpha=0.7)
+
+        # diagonal-mass
+        if d_mass_history:
+            axes[i, 2].plot(d_mass_history, color='purple', linewidth=2)
+            axes[i, 2].set_title(f'{filename} — D-mass (d_model={dimension})')
+            axes[i, 2].set_xlabel('Epoch')
+            axes[i, 2].set_ylabel('Diagonal Spectral Mass')
+            axes[i, 2].grid(True, linestyle='--', alpha=0.7)
+        else:
+            axes[i, 2].text(0.5, 0.5, 'No D-mass data',
+                            ha='center', va='center',
+                            transform=axes[i, 2].transAxes)
+
+    plt.tight_layout()
+    plt.show()

@@ -259,7 +259,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 83
+    vocab_size = 71
     epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
@@ -288,7 +288,7 @@ def execute():
     ''' 
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
-    weight_decay = 0.08
+    weight_decay = 0.09
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
     evaluate_model(model, test_loader, show_accuracy=True)
 
