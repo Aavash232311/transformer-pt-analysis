@@ -34,10 +34,7 @@ class FibonacciModDataset(Dataset):
         Accidently I have it only 9 seen pairs, and little gorking was seen.
     '''
     def generate_fib_sequence(self, mod):
-        random.seed(42)
         all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
-        random.shuffle(all_pairs)
-
 
         train_pairs = all_pairs[:int(0.25 * len(all_pairs))] 
     
@@ -259,11 +256,11 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 71
+    vocab_size = 31
     epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=13)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
     train_loader = DataLoader(
