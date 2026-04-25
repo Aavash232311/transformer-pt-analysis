@@ -39,7 +39,7 @@ class FibonacciModDataset(Dataset):
         random.shuffle(all_pairs)
 
 
-        train_pairs = all_pairs[:int(0.2 * len(all_pairs))] 
+        train_pairs = all_pairs[:int(0.25 * len(all_pairs))] 
     
         sequences = []
 
@@ -136,8 +136,12 @@ epoch_masses = []
 train_accuracy = []
 test_accuracy = []
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.009):
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.001)
+checkpoint_dir = 'checkpoints/temp'
+file_name = f'sus_1.pth'
+full_path  = os.path.join(checkpoint_dir, file_name)
+
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.004):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.9)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -188,10 +192,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.009):
 
         train_accuracy.append((correct / total) * 100)
 
-        if (epoch + 1) % 100 == 0:
-            checkpoint_dir = 'checkpoints'
-            file_name = f'new_ds.pth'
-            full_path  = os.path.join(checkpoint_dir, file_name)
+        if (epoch + 1) % 50 == 0:
             if not os.path.exists(checkpoint_dir): 
                 os.makedirs(checkpoint_dir)
 
@@ -202,7 +203,8 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.009):
                 'epoch': epoch,
                 'd_model': model.d_model,
                 'test_accuracy': test_accuracy,
-                'train_accuracy': train_accuracy
+                'train_accuracy': train_accuracy,
+                 "d_mass": epoch_masses,
             }
             torch.save(checkpoint, full_path) 
             print(f"Successfully saved to: {full_path}", "- " * 20, "Checkpoint saved")
@@ -255,11 +257,11 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 97
-    epoch = 30000
+    vocab_size = 23
+    epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=13)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
     train_loader = DataLoader(
@@ -284,11 +286,6 @@ def execute():
     ''' 
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
-
-
-    checkpoint_dir = 'checkpoints'
-    file_name = f'new_ds.pth'
-    full_path  = os.path.join(checkpoint_dir, file_name)
 
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader) 
     evaluate_model(model, test_loader, show_accuracy=True)
