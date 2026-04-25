@@ -137,11 +137,11 @@ train_accuracy = []
 test_accuracy = []
 
 checkpoint_dir = 'checkpoints/temp'
-file_name = f'sus_1.pth'
+file_name = f'sus_6.pth'
 full_path  = os.path.join(checkpoint_dir, file_name)
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.004):
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.9)
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.004, weight_decay=0.9):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     loss_fn = nn.CrossEntropyLoss()
     start_time = time.time()
@@ -205,6 +205,8 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.004):
                 'test_accuracy': test_accuracy,
                 'train_accuracy': train_accuracy,
                  "d_mass": epoch_masses,
+                'vocab_size': model.vocab_size,
+                'weight_decay': weight_decay
             }
             torch.save(checkpoint, full_path) 
             print(f"Successfully saved to: {full_path}", "- " * 20, "Checkpoint saved")
@@ -257,7 +259,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 23
+    vocab_size = 83
     epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
@@ -286,8 +288,8 @@ def execute():
     ''' 
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
-
-    train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader) 
+    weight_decay = 0.08
+    train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
     evaluate_model(model, test_loader, show_accuracy=True)
 
 
@@ -304,7 +306,9 @@ def execute():
         'd_model': model.d_model,
         "d_mass": epoch_masses,
         'test_accuracy': test_accuracy,
-        'train_accuracy': train_accuracy
+        'train_accuracy': train_accuracy,
+        'vocab_size': vocab_size,
+        'weight_decay': weight_decay
 
     }
     torch.save(checkpoint, full_path) 
