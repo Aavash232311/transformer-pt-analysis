@@ -28,13 +28,11 @@ class FibonacciModDataset(Dataset):
             y = torch.tensor(arr[1:], dtype=torch.long)
             self.samples.append((x, y))
 
-
-    ''' 
-        Small shample of data for training less harder to memorize, 
-        Accidently I have it only 9 seen pairs, and little gorking was seen.
-    '''
     def generate_fib_sequence(self, mod):
+
+        random.seed(42)
         all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
+        random.shuffle(all_pairs)
 
         train_pairs = all_pairs[:int(0.25 * len(all_pairs))] 
     
@@ -44,10 +42,11 @@ class FibonacciModDataset(Dataset):
                 
             s = [a, b]
             for _ in range(self.seq_len - 1):
-                s.append((s[-1] + s[-2]) % mod)
+                elem = (s[-1] + s[-2]) % mod
+                s.append(elem)
                 
             
-            # # track pairs this sequence adds
+            # track pairs this sequence adds
             # for i in range(len(s) - 1): # that generated mesh also accouts for seen pairs.
             #     seen_pairs.add((s[i], s[i+1]))
             
@@ -55,12 +54,6 @@ class FibonacciModDataset(Dataset):
 
         return sequences
 
-
-    # def generate_fib_sequence(self, length, mod):
-    #     seq = [1, 1]
-    #     for _ in range(length - 2):
-    #         seq.append((seq[-1] + seq[-2]) % mod)
-    #     return seq
 
     def __len__(self):
         return len(self.samples)
@@ -260,7 +253,7 @@ def execute():
     epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
-    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=20)
+    generated_ds = FibonacciModDataset(mod=vocab_size, seq_len=2)
     eval_ds = GenerateEvulatePairs(generated_ds, mod=vocab_size)
 
     train_loader = DataLoader(
@@ -285,7 +278,7 @@ def execute():
     ''' 
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
-    weight_decay = 0.09
+    weight_decay = 1
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
     evaluate_model(model, test_loader, show_accuracy=True)
 
