@@ -44,11 +44,6 @@ class FibonacciModDataset(Dataset):
             for _ in range(self.seq_len - 1):
                 elem = (s[-1] + s[-2]) % mod
                 s.append(elem)
-                
-            
-            # track pairs this sequence adds
-            # for i in range(len(s) - 1): # that generated mesh also accouts for seen pairs.
-            #     seen_pairs.add((s[i], s[i+1]))
             
             sequences.append(s)
 
