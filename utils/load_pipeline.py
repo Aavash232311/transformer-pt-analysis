@@ -110,11 +110,12 @@ class GenerateEvulatePairs(Dataset):
 
         seq_len =  len(self.dataset[0][0])
         self.samples = [] # this returns the unseen pairs. 
+        print(f"Seq len {seq_len}")
 
 
         for a, b in unseen:
             seq = [a, b]
-            while len(seq) < seq_len + 1:
+            while len(seq) < seq_len - 1: # the bug was here this should be - 1.
                 seq.insert(0, (seq[1] - seq[0]) % self.mod)
             
             x = torch.tensor(seq[:-1], dtype=torch.long)

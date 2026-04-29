@@ -29,10 +29,7 @@ class FibonacciModDataset(Dataset):
             self.samples.append((x, y))
 
     def generate_fib_sequence(self, mod):
-
-        random.seed(42)
         all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
-        random.shuffle(all_pairs)
 
         train_pairs = all_pairs[:int(0.25 * len(all_pairs))] 
     
@@ -274,6 +271,24 @@ def execute():
     We have made the model get high accuracy on limited possible resources, now we need to save the checkpoint in order to save time.
     '''
     weight_decay = 1
+
+    def unique_pairs(dataset):
+        pair_counters = set()
+        seq_len = len(dataset[0][0])
+
+        for a, b in dataset:
+            for i in range(seq_len-1):
+                x = a[i].item()
+                y = a[i+1].item()
+                pair_counters.add((x, y))
+
+        return pair_counters
+
+
+    train_pairs = unique_pairs(generated_ds)
+    evulate_pairs = unique_pairs(eval_ds)
+    print(f"Common factor {len(train_pairs & evulate_pairs)}")
+
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
     evaluate_model(model, test_loader, show_accuracy=True)
 
