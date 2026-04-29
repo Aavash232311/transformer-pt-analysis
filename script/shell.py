@@ -125,7 +125,7 @@ checkpoint_dir = 'checkpoints/temp'
 file_name = f'sus_6.pth'
 full_path  = os.path.join(checkpoint_dir, file_name)
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.004, weight_decay=0.9):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_decay=1):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     loss_fn = nn.CrossEntropyLoss()
@@ -244,7 +244,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
 
 def execute():
-    vocab_size = 31
+    vocab_size = 113
     epoch = int(input("Enter number of epoch: "))
 
     total_accuray = 0
