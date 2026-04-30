@@ -1,7 +1,6 @@
 import os
 import time
 import torch
-import random
 import torch.nn as nn
 from .analysis.analysis_dft import Analysis
 from torch.utils.data import Dataset, DataLoader
@@ -31,7 +30,7 @@ class FibonacciModDataset(Dataset):
     def generate_fib_sequence(self, mod):
         all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
 
-        train_pairs = all_pairs[:int(0.25 * len(all_pairs))] 
+        train_pairs = all_pairs[:int(0.2 * len(all_pairs))] 
     
         sequences = []
 
@@ -58,10 +57,8 @@ class MLP(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(d_model, hidden_layer),
-            nn.GELU(),
-            nn.Linear(hidden_layer, hidden_layer),
-            nn.GELU(),
-            nn.Linear(hidden_layer, d_model),  
+            nn.ReLU(),
+            nn.Linear(hidden_layer, d_model),
         )
 
     def forward(self, x):
@@ -94,16 +91,15 @@ class MinimalTransformer(nn.Module):
         pos = torch.arange(T, device=tokens.device)              
         x = self.token_embed(tokens) + self.pos_embed(pos).unsqueeze(0)    
 
-        mask = torch.full((T, T), float('-inf'), device=tokens.device)
-        for i in range(T):
-            for j in range(max(0, i-2), i+1):
-                mask[i, j] = 0.0
+        # mask = torch.full((T, T), float('-inf'), device=tokens.device)
+        # for i in range(T):
+        #     for j in range(max(0, i-2), i+1):
+        #         mask[i, j] = 0.0
 
-        for attn, mlp in zip(self.layers, self.mlps):
-            attn_out, _ = attn(x, x, x, attn_mask=mask)
-            x = x + attn_out  
-            x = x + mlp(x)
-            
+        attn_mask = torch.triu(torch.ones(T, T, device=tokens.device) * float('-inf'), diagonal=1)
+        for attn in self.layers:
+            attn_out, _ = attn(x, x, x, attn_mask=attn_mask)
+            x = x + attn_out
         return self.out_proj(x)
     
     def get_embeddings(self):
@@ -141,7 +137,7 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_deca
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             logits = model(x)
-            loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1))
+            loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1)) 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -149,9 +145,9 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_deca
 
             ''' For training accuracy. '''
             pred = logits.argmax(dim=-1)
-            correct += (pred[:, 1:] == y[:, 1:]).sum().item()
-            total += y[:, 1:].numel()
 
+            correct += (pred[:, 1:] == y[:, 1:]).sum().item() 
+            total += y[:, 1:].numel() 
             ''' Diagonal spectral mass '''
             d_mass = analysis.diagonal_sperectal_mass(preferred_logits=logits, x=x)
             batch_d_masses.append(d_mass)
@@ -164,14 +160,14 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_deca
         with torch.no_grad():
             ''' evulate_model returns the loss and accuracy per epoch. '''
             val_loss, eval_accuracy = evaluate_model(model, test_loader, show_accuracy=False) 
+
+            
             ''' Here we have accuray per ecpoh so we can append that in train accuracy '''
             test_accuracy.append({"epoch": epoch, "test_accuracy": eval_accuracy}) # for testing accuracy.
             eval_plot.append(val_loss)
 
         model.train()
         avg_loss = total_loss / len(dataloader)
-
-
         train_accuracy.append((correct / total) * 100)
 
         if (epoch + 1) % 50 == 0:
@@ -195,6 +191,9 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_deca
             print("10 interval")
 
         current_wd = optimizer.param_groups[0]['weight_decay']
+        current_lr = optimizer.param_groups[0]['lr']
+
+
         # if avg_loss < 0.05 and current_wd == 0.0:  # let it memorize first.
         #     for g in optimizer.param_groups:
         #         g['weight_decay'] = 1.9
@@ -204,10 +203,9 @@ def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_deca
         # if epoch >= 500:
         #     for g in optimizer.param_groups:
         #         g['lr'] = 0.00001
-        current_lr = optimizer.param_groups[0]['lr']
 
         
-        print(f"Epoch {epoch+1}, Loss (Training): {avg_loss:.4f} Loss(val): {val_loss:.4f} Learning rate(eta): {current_lr:.10f} weight decay {current_wd}")
+        print(f"Epoch {epoch+1}, Loss (Training): {avg_loss:.4f} Loss(val): {val_loss:.4f} Learning rate(eta): {current_lr:.10f} weight decay {current_wd} Eval accuracy: {eval_accuracy:.2f}%")
 
 
     end_time = time.time()
@@ -225,9 +223,9 @@ def evaluate_model(model, dataloader, show_accuracy=False):
             x, y = x.to(device), y.to(device)
             logits = model(x)
             pred = logits.argmax(dim=-1)
-            loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1))
+            loss = loss_fn(logits[:, 1:].reshape(-1, logits.size(-1)), y[:, 1:].reshape(-1)) 
             total_loss += loss.item()
-            correct += (pred[:, 1:] == y[:, 1:]).sum().item()
+            correct += (pred[:, 1:] == y[:, 1:]).sum().item() 
             total += y[:, 1:].numel()
 
     total_accuracy = f"{correct / total:.2%}"
@@ -236,6 +234,7 @@ def evaluate_model(model, dataloader, show_accuracy=False):
 
     avg_loss = total_loss / len(dataloader)
     total_accuracy = (correct / total) * 100
+
     return avg_loss, total_accuracy
 
 
@@ -263,7 +262,7 @@ def execute():
         num_workers=0,   
         pin_memory=True
     )
-
+   
     model = MinimalTransformer(vocab_size=vocab_size).to(device)
 
 
@@ -280,17 +279,21 @@ def execute():
             for i in range(seq_len-1):
                 x = a[i].item()
                 y = a[i+1].item()
-                pair_counters.add((x, y))
+                pair_counters.add((x, y))   
 
         return pair_counters
 
 
     train_pairs = unique_pairs(generated_ds)
     evulate_pairs = unique_pairs(eval_ds)
-    print(f"Common factor {len(train_pairs & evulate_pairs)}")
+
+    common_factor = train_pairs & evulate_pairs # if common factor is zero, then it is a binary task, there force it is mathematically impossible to have non-repetance on the fib sequence we are generating.
+    print(f"Common factor {len(common_factor)}")
+
+
 
     train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
-    evaluate_model(model, test_loader, show_accuracy=True)
+    evaluate_model(model=model, dataloader=test_loader, show_accuracy=True)
 
 
 

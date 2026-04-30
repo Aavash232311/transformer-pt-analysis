@@ -105,6 +105,7 @@ class GenerateEvulatePairs(Dataset):
 
         all_pairs = {(a, b) for a in range(self.mod) for b in range(self.mod)}
         unseen = list(all_pairs - pair_counters)
+        print(f"Total {len(all_pairs)}")
         print(f"seen {len(pair_counters)}")
         print(f"Unseen {len(unseen)}")
 
@@ -115,7 +116,7 @@ class GenerateEvulatePairs(Dataset):
 
         for a, b in unseen:
             seq = [a, b]
-            while len(seq) < seq_len - 1: # the bug was here this should be - 1.
+            while len(seq) < seq_len + 1:
                 seq.insert(0, (seq[1] - seq[0]) % self.mod)
             
             x = torch.tensor(seq[:-1], dtype=torch.long)
@@ -127,3 +128,4 @@ class GenerateEvulatePairs(Dataset):
     
     def __getitem__(self, idx):
         return self.samples[idx]
+
