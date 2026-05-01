@@ -123,6 +123,7 @@ class GenerateEvulatePairs(Dataset):
             y = torch.tensor(seq[1:],  dtype=torch.long)
             self.samples.append((x, y))
 
+
     def __len__(self):
         return len(self.samples)
     

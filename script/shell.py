@@ -292,8 +292,8 @@ def execute():
 
 
 
-    train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
-    evaluate_model(model=model, dataloader=test_loader, show_accuracy=True)
+    # train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
+    # evaluate_model(model=model, dataloader=test_loader, show_accuracy=True)
 
 
 
