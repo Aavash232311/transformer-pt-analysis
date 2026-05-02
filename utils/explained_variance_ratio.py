@@ -63,8 +63,8 @@ def accuracy_overdt(test, train):
 
     plt.figure(figsize=(10, 6))
 
-    plt.plot(epochs, test_acc, label='Training accuracy (%)', color='#2563EB', linewidth=2)
-    plt.plot(epochs, train, label='Evaluation accuracy (%)', color='#059669', linewidth=2)
+    plt.plot(epochs, train, label='Training accuracy (%)', color='#2563EB', linewidth=2)
+    plt.plot(epochs, test_acc, label='Evaluation accuracy (%)', color='#059669', linewidth=2)
 
     plt.title('Training vs Testing Accuracy')
     plt.xlabel('Epochs')

@@ -117,7 +117,7 @@ class GenerateEvulatePairs(Dataset):
         for a, b in unseen:
             seq = [a, b]
             while len(seq) < seq_len + 1:
-                seq.insert(0, (seq[1] - seq[0]) % self.mod)
+                seq.append((seq[-1] + seq[-2]) % self.mod)
             
             x = torch.tensor(seq[:-1], dtype=torch.long)
             y = torch.tensor(seq[1:],  dtype=torch.long)

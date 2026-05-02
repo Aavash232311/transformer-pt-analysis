@@ -30,7 +30,7 @@ class FibonacciModDataset(Dataset):
     def generate_fib_sequence(self, mod):
         all_pairs = [(a, b) for a in range(mod) for b in range(mod)]
 
-        train_pairs = all_pairs[:int(0.2 * len(all_pairs))] 
+        train_pairs = all_pairs[:int(0.3 * len(all_pairs))] 
     
         sequences = []
 
@@ -83,7 +83,7 @@ class MinimalTransformer(nn.Module):
 
         self.out_proj = nn.Linear(d_model, vocab_size)
         self.vocab_size = vocab_size
-        self.input_proj = nn.Linear(2, d_model)
+        # self.input_proj = nn.Linear(2, d_model)
         self.d_model = d_model
 
     def forward(self, tokens):
@@ -96,10 +96,12 @@ class MinimalTransformer(nn.Module):
         #     for j in range(max(0, i-2), i+1):
         #         mask[i, j] = 0.0
 
-        attn_mask = torch.triu(torch.ones(T, T, device=tokens.device) * float('-inf'), diagonal=1)
-        for attn in self.layers:
-            attn_out, _ = attn(x, x, x, attn_mask=attn_mask)
+        # attn_mask = torch.triu(torch.ones(T, T, device=tokens.device) * float('-inf'), diagonal=1)
+     
+        for attn, mlp in zip(self.layers, self.mlps):
+            attn_out, _ = attn(x, x, x)
             x = x + attn_out
+            x = x + mlp(x) 
         return self.out_proj(x)
     
     def get_embeddings(self):
@@ -118,7 +120,7 @@ checkpoint_dir = 'checkpoints/temp'
 file_name = f'sus_6.pth'
 full_path  = os.path.join(checkpoint_dir, file_name)
 
-def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_decay=1):
+def train_model(model, dataloader, test_loader, epochs=12, lr=0.001, weight_decay=4):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     loss_fn = nn.CrossEntropyLoss()
@@ -292,9 +294,8 @@ def execute():
 
 
 
-    # train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
-    # evaluate_model(model=model, dataloader=test_loader, show_accuracy=True)
-
+    train_model(model=model, dataloader=train_loader, epochs=epoch, test_loader=test_loader, weight_decay=weight_decay) 
+    evaluate_model(model=model, dataloader=test_loader, show_accuracy=True)
 
 
     if not os.path.exists(checkpoint_dir): # if this does not exists for some reason then create one
